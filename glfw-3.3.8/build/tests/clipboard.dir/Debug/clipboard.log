@@ -1,0 +1,6 @@
+﻿  Building Custom Rule C:/GraphicsProgramming/glfw-3.3.8/tests/CMakeLists.txt
+  clipboard.c
+  getopt.c
+  glad_gl.c
+  Generating Code...
+  clipboard.vcxproj -> C:\GraphicsProgramming\glfw-3.3.8\build\tests\Debug\clipboard.exe
