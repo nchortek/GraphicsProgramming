@@ -14,27 +14,20 @@ const unsigned int SCR_HEIGHT = 600;
 // TODO: These should probably be in their own shader file
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"out vec4 vertexColor;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = vec4(aPos, 1.0);\n"
+"   vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"
 "}\0";
 
-// Orange
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"in vec4 vertexColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"   FragColor = vertexColor;\n"
 "}\n\0";
-
-// Yellow
-const char* fragmentShaderSource2 = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-"}\n\0";
-
 
 int main()
 {
@@ -90,7 +83,7 @@ int main()
         std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
-    // Set up fragment shader (orange)
+    // Set up fragment shader
     unsigned int fragmentShader;
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -110,28 +103,6 @@ int main()
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // Set up fragment shader 2 (yellow)
-    unsigned int fragmentShader2;
-    fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
-
-    if (!fragmentShader2)
-    {
-        std::cout << "Failed to create fragment shader" << std::endl;
-        return -1;
-    }
-
-    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, NULL);
-    glCompileShader(fragmentShader2);
-
-    // Check for fragment shader compilation errors
-    glGetShaderiv(fragmentShader2, GL_COMPILE_STATUS, &success);
-
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader2, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT-2::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
     // Link shaders
@@ -156,32 +127,10 @@ int main()
         std::cout << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
     }
 
-    unsigned int shaderProgram2;
-    shaderProgram2 = glCreateProgram();
-
-    if (!shaderProgram2)
-    {
-        std::cout << "Failed to create shader program" << std::endl;
-        return -1;
-    }
-
-    glAttachShader(shaderProgram2, vertexShader);
-    glAttachShader(shaderProgram2, fragmentShader2);
-    glLinkProgram(shaderProgram2);
-
-    // Check for shader program errors
-    glGetProgramiv(shaderProgram2, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(shaderProgram2, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
-    }
-
     // Our shaders are now part of our shader program, so we delete the original shaders to avoid
     // allocating twice the memory for them
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-    glDeleteShader(fragmentShader2);
 
     // TODO: Should these be placed in dedicated mesh files?
     float vertices1[] = {
@@ -204,37 +153,35 @@ int main()
     };
 
     // Create a VAOs, VBOs, and EBOs
-    unsigned int VAO, VAO2, VBO, VBO2, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenVertexArrays(1, &VAO2);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &VBO2);
+    unsigned int VAOs[2], VBOs[2], EBO;
+    glGenVertexArrays(2, VAOs);
+    glGenBuffers(2, VBOs);
     glGenBuffers(1, &EBO);
 
     // Configure VAO for first triangle
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindVertexArray(VAOs[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // Unbinding is not necessary since we explicitly bind different OpenGL Objects below
+    // Question: When is it necessary, then?
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glBindVertexArray(0);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Configure VAO for second triangle
-    glBindVertexArray(VAO2);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+    glBindVertexArray(VAOs[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     // Reusing the same EBO so no need to reset its data
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
 
@@ -255,18 +202,15 @@ int main()
         // it uses the current state to retrieve the clearing color from.
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // Render orange triangle
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
 
-        // Render yellow triangle
-        glUseProgram(shaderProgram2);
-        glBindVertexArray(VAO2);
+        // Render first triangle
+        glBindVertexArray(VAOs[0]);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+
+        // Render second triangle
+        glBindVertexArray(VAOs[1]);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         // Swap color buffer once the new frame is ready
         glfwSwapBuffers(window);
@@ -276,13 +220,10 @@ int main()
     }
 
     // Memory clean-up
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteVertexArrays(1, &VAO2);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &VBO2);
+    glDeleteVertexArrays(2, VAOs);
+    glDeleteBuffers(2, VBOs);
     glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
-    glDeleteProgram(shaderProgram2);
 
     glfwTerminate();
     return 0;
