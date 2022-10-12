@@ -14,19 +14,17 @@ const unsigned int SCR_HEIGHT = 600;
 // TODO: These should probably be in their own shader file
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
-"out vec4 vertexColor;\n"
 "void main()\n"
 "{\n"
 "   gl_Position = vec4(aPos, 1.0);\n"
-"   vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"in vec4 vertexColor;\n"
+"uniform vec4 ourColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = vertexColor;\n"
+"   FragColor = ourColor;\n"
 "}\n\0";
 
 int main()
@@ -59,8 +57,7 @@ int main()
     }
 
     // Set up vertex shader
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
     // glCreateShader returns 0 if an error occurred
     if (!vertexShader)
@@ -75,8 +72,8 @@ int main()
     // Check for vertex shader compilation errors
     int success;
     char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
 
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
@@ -84,8 +81,7 @@ int main()
     }
 
     // Set up fragment shader
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
     if (!fragmentShader)
     {
@@ -98,7 +94,6 @@ int main()
 
     // Check for fragment shader compilation errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
     if (!success)
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
@@ -106,8 +101,7 @@ int main()
     }
 
     // Link shaders
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
+    unsigned int shaderProgram = glCreateProgram();
 
     if (!shaderProgram)
     {
@@ -133,57 +127,29 @@ int main()
     glDeleteShader(fragmentShader);
 
     // TODO: Should these be placed in dedicated mesh files?
-    float vertices1[] = {
-        0.1f,  0.6f, 0.0f,
-        0.4f, 0.6f, 0.0f,
-        0.4f, 0.1f, 0.0f
+    float vertices[] = {
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+         0.0f,  0.5f, 0.0f   // top 
     };
 
-    float vertices2[] = {
-        -0.4f,  -0.1f, 0.0f,
-        -0.4f, -0.6f, 0.0f,
-        -0.1f, -0.6f, 0.0f
-    };
-
-    // (0-indexed values)
-    // Note that for rendering two non-overlapping triangles (as opposed to a rectangle)
-    // an EBO is unecessary, but I want to maintain a reference for later
-    unsigned int indices[] = {
-        0, 1, 2
-    };
-
-    // Create a VAOs, VBOs, and EBOs
-    unsigned int VAOs[2], VBOs[2], EBO;
-    glGenVertexArrays(2, VAOs);
-    glGenBuffers(2, VBOs);
-    glGenBuffers(1, &EBO);
+    // Create a VAO and VBO
+    unsigned int VAO, VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
 
     // Configure VAO for first triangle
-    glBindVertexArray(VAOs[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Unbinding is not necessary since we explicitly bind different OpenGL Objects below
-    // Question: When is it necessary, then?
+    // Unbinding is not necessary since we're always drawing the same triangle.
+    // If we were drawing multiple triangles we'd need to bind and unbind different VAOs before
+    // our draw calls.
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
     // glBindVertexArray(0);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    // Configure VAO for second triangle
-    glBindVertexArray(VAOs[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // Reusing the same EBO so no need to reset its data
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-
 
     // uncomment this call to draw in wireframe polygons.
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -202,15 +168,18 @@ int main()
         // it uses the current state to retrieve the clearing color from.
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        // Activate the shader
         glUseProgram(shaderProgram);
 
-        // Render first triangle
-        glBindVertexArray(VAOs[0]);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        // Update the uniform color
+        float timeValue = glfwGetTime();
+        float greenValue = sin(timeValue) / 2.0f + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
-        // Render second triangle
-        glBindVertexArray(VAOs[1]);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        // Render triangle
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // Swap color buffer once the new frame is ready
         glfwSwapBuffers(window);
@@ -220,9 +189,8 @@ int main()
     }
 
     // Memory clean-up
-    glDeleteVertexArrays(2, VAOs);
-    glDeleteBuffers(2, VBOs);
-    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();
