@@ -19,6 +19,9 @@ const char* fragmentShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL
 const char* texturePath1 = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
 const char* texturePath2 = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
 
+// stores how much we're seeing of either texture
+float mixValue = 0.2f;
+
 int main()
 {
     // Init glfw, setting to OpenGL 3.3 and the core-profile
@@ -54,10 +57,10 @@ int main()
     // TODO: Should these be placed in dedicated mesh files?
     float vertices[] = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
     };
 
     unsigned int indices[] = {
@@ -101,11 +104,12 @@ int main()
     // Set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Load and generate the texture
     int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true);
     unsigned char* data = stbi_load(texturePath1, &width, &height, &nrChannels, 0);
 
     if (data)
@@ -126,7 +130,7 @@ int main()
     // Set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Load and generate the texture
@@ -170,6 +174,9 @@ int main()
         glBindTexture(GL_TEXTURE_2D, textures[0]);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+        // set the texture mix value in the shader
+        ourShader.setFloat("mixValue", mixValue);
 
         // Activate the shader
         ourShader.useProgram();
@@ -215,5 +222,25 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
+    }
+
+    // TODO: Else-if? can we process multiple keys at once or do they come into this method one at a time?
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        mixValue += 0.001f;
+
+        if (mixValue >= 1.0f)
+        {
+            mixValue = 1.0f;
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        mixValue -= 0.001f;
+        if (mixValue <= 0.0f)
+        {
+            mixValue = 0.0f;
+        }
     }
 }
