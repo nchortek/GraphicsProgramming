@@ -1,9 +1,2 @@
 ﻿  main.cpp
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(329,17): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(330,17): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(334,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(336,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(337,13): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(338,13): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\GraphicsProgramming\LearnOpenGL\LearnOpenGL\main.cpp(376,24): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
   LearnOpenGL.vcxproj -> C:\GraphicsProgramming\LearnOpenGL\x64\Debug\LearnOpenGL.exe

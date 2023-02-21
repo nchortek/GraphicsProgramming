@@ -5,6 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Shaders/shader.h>
+#include <Camera/camera.h>
 #include <Textures/stb_image.h>
 
 #include <iostream>
@@ -12,9 +13,10 @@
 // Forward Declarations
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
-// Settings constants
+// Screen setting constants
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
@@ -28,17 +30,13 @@ float mixValue = 0.2f;
 
 // Time between current frame and last frame
 float deltaTime = 0.0f;
-
 // Time of last frame
 float lastFrame = 0.0f;
 
-// Rotation angles and mouse position
-float yaw = -90.0f,
-    pitch = 0.0f,
-    // initial mouse placement set to the middle of our 800 x 600 screen
-    lastX = 400.0f,
-    lastY = 300.0f;
-
+// Camera / Mouse Positions
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2,
+    lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera speed and orientation
@@ -70,6 +68,7 @@ int main()
     // Set callbacks after window is created but before we initiate the render loop
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     // Initialize GLAD (loads all OpenGL function pointers)
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -258,12 +257,11 @@ int main()
 
         // Construct our transformation matrices
         // note that we're translating the scene in the reverse direction of where we want to move`
-        glm::mat4 view;
-        view = view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = camera.GetViewMatrix();
         ourShader.setMat4("view", view);
 
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
         ourShader.setMat4("projection", projection);
 
         // Render boxes
@@ -322,8 +320,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 /// <param name="window"></param>
 /// <param name="xpos"></param>
 /// <param name="ypos"></param>
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
     if (firstMouse)
     {
         lastX = xpos;
@@ -332,34 +333,23 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     }
 
     float xoffset = xpos - lastX;
-    // reversed since y-coordinates range from bottom to top
-    float yoffset = lastY - ypos;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
     lastX = xpos;
     lastY = ypos;
 
-    const float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
 
-    yaw += xoffset;
-    pitch += yoffset;
-
-    // Make sure the user cant do a somersault / cartwheel.
-    // They should be able to look at the ground or the sky but no further
-    if (pitch > 89.0f)
-    {
-        pitch = 89.0f;
-    }
-    else if (pitch < -89.0f)
-    {
-        pitch = -89.0f;
-    }
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
+/// <summary>
+/// Adjusts the field of view based on user scroll-wheel input
+/// </summary>
+/// <param name="window"></param>
+/// <param name="xoffset"></param>
+/// <param name="yoffset"></param>
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 /// <summary>
@@ -372,11 +362,6 @@ void processInput(GLFWwindow* window)
     {
         glfwSetWindowShouldClose(window, true);
     }
-
-    float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-    float hardwareAdjustedSpeed = cameraSpeed * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
@@ -397,27 +382,27 @@ void processInput(GLFWwindow* window)
         }
     }
 
+    float currentFrame = static_cast<float>(glfwGetTime());
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    // What about hardware adjusted velocity?
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        cameraPos += hardwareAdjustedSpeed * cameraFront;
+        camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
     }
-
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        cameraPos -= hardwareAdjustedSpeed * cameraFront;
+        camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        // We normalize here because the cross product does not always return a unit vector, and we want a
-        // consistent movement speed
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * hardwareAdjustedSpeed;
+        camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        // We normalize here because the cross product does not always return a unit vector, and we want a
-        // consistent movement speed
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * hardwareAdjustedSpeed;
+        camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
     }
 }
