@@ -33,14 +33,15 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // Camera / Mouse Positions
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+glm::vec3 cameraStartPos = glm::vec3(0.0f, 1.0f, 5.0f);
+Camera camera(cameraStartPos);
 float lastX = SCR_WIDTH / 2,
     lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
 // Camera speed and orientation
 const float cameraSpeed = 2.5f;
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f),
+glm::vec3 cameraPos = cameraStartPos,
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f),
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
