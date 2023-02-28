@@ -20,8 +20,10 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-const char* vertexShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/shader.vs";
-const char* fragmentShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/shader.fs";
+const char* objVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/objectShader.vs";
+const char* objFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/objectShader.fs";
+const char* lightVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.vs";
+const char* lightFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.fs";
 //const char* texturePath1 = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
 //const char* texturePath2 = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
 
@@ -43,7 +45,9 @@ glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f),
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f),
-    lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    lightColor = glm::vec3(1.0f, 1.0f, 1.0f),
+    objectPosition = glm::vec3(0.0f, 0.0f, 0.0f),
+    lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
 int main()
 {
@@ -78,7 +82,8 @@ int main()
     }
 
     // Create shader program
-    Shader ourShader(vertexShaderPath, fragmentShaderPath);
+    Shader objectShader(objVertShaderPath, objFragShaderPath);
+    Shader lightShader(lightVertShaderPath, lightFragShaderPath);
 
     // TODO: Should these be placed in dedicated mesh files?
     float vertices[] = {
@@ -125,17 +130,13 @@ int main()
         -0.5f,  0.5f, -0.5f
     };
 
-    glm::vec3 cubePositions[] = {
-        glm::vec3(0.0f,  0.0f,  0.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f)
-    };
-
     // Create a VAO and VBO
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
+    unsigned int objectVAO, lightVAO, VBO;
+    glGenVertexArrays(1, &objectVAO);
+    glGenVertexArrays(1, &lightVAO);
     glGenBuffers(1, &VBO);
 
-    glBindVertexArray(VAO);
+    glBindVertexArray(objectVAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -144,10 +145,16 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    glBindVertexArray(lightVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
     // Enable depth testing via the z-buffer
     glEnable(GL_DEPTH_TEST);
-
-
 
     // Render loop
     while (!glfwWindowShouldClose(window))
@@ -164,34 +171,43 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Activate the shader
-        ourShader.useProgram();
-        ourShader.setVec3("objectColor", lightColor);
-        ourShader.setVec3("lightColor", objectColor);
+        // Render 
+        objectShader.useProgram();
+        objectShader.setVec3("objectColor", objectColor);
+        objectShader.setVec3("lightColor", lightColor);
 
-        // Construct our transformation matrices
-        // note that we're translating the scene in the reverse direction of where we want to move`
+        // Construct our object's transformation matrices
+        // note that we're translating the scene in the reverse direction of where we want to move
         glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("view", view);
+        objectShader.setMat4("view", view);
 
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
+        objectShader.setMat4("projection", projection);
 
-        // Render boxes
-        glBindVertexArray(VAO);
+        // calculate the model matrix for each object and pass it to shader before drawing
+        glm::mat4 objectModel = glm::mat4(1.0f);
+        objectModel = glm::translate(objectModel, objectPosition);
+        objectShader.setMat4("model", objectModel);
 
-        int numCubes = sizeof(cubePositions) / sizeof(cubePositions[0]);
-        for (unsigned int i = 0; i < numCubes; i++)
-        {
-            // calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.3f, 0.5f));
-            ourShader.setMat4("model", model);
+        glBindVertexArray(objectVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // Render light
+        lightShader.useProgram();
+        lightShader.setVec3("lightColor", lightColor);
+
+        // Set up the light's transform matrices
+        lightShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+
+        glm::mat4 lightModel = glm::mat4(1.0f);
+        lightModel = glm::translate(lightModel, lightPosition);
+        lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+        lightShader.setMat4("model", lightModel);
+
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Swap color buffer once the new frame is ready
         glfwSwapBuffers(window);
@@ -201,9 +217,11 @@ int main()
     }
 
     // Memory clean-up
-    glDeleteVertexArrays(1, &VAO);
+    glDeleteVertexArrays(1, &objectVAO);
+    glDeleteVertexArrays(1, &lightVAO);
     glDeleteBuffers(1, &VBO);
-    ourShader.deleteProgram();
+    objectShader.deleteProgram();
+    lightShader.deleteProgram();
 
     glfwTerminate();
     return 0;

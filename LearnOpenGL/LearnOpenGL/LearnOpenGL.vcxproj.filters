@@ -26,11 +26,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.vs">
+    <None Include="objectShader.vs">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="shader.fs">
+    <None Include="objectShader.fs">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="lightShader.fs" />
+    <None Include="lightShader.vs" />
   </ItemGroup>
 </Project>
