@@ -48,7 +48,7 @@ glm::vec3 cameraPos = cameraStartPos,
 glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f),
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f),
     objectPosition = glm::vec3(0.0f, 0.0f, 0.0f),
-    lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+    lightPosition = glm::vec3(1.2f, 1.5f, 2.0f);
 
 int main()
 {
@@ -179,7 +179,12 @@ int main()
         objectShader.useProgram();
         objectShader.setVec3("objectColor", objectColor);
         objectShader.setVec3("lightColor", lightColor);
-        objectShader.setVec3("lightPos", lightPosition);
+
+        glm::mat4 lightRotation = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+        // Note that lightPosition is already in world space so we don't need a translate to get a rotated world space position
+        // like we do when setting the lightModel further down
+        glm::vec3 rotatedLightPosition = glm::vec3(lightRotation * glm::vec4(lightPosition, 1.0f));
+        objectShader.setVec3("lightPos", rotatedLightPosition);
 
         // Construct our object's transformation matrices
         // note that we're translating the scene in the reverse direction of where we want to move
@@ -212,7 +217,9 @@ int main()
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
 
-        glm::mat4 lightModel = glm::mat4(1.0f);
+        glm::mat4 lightModel = lightRotation;
+        // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
+        // of the light
         lightModel = glm::translate(lightModel, lightPosition);
         lightModel = glm::scale(lightModel, glm::vec3(0.2f));
         lightShader.setMat4("model", lightModel);
