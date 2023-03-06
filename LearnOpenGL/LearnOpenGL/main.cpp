@@ -186,6 +186,8 @@ int main()
         glm::vec3 rotatedLightPosition = glm::vec3(lightRotation * glm::vec4(lightPosition, 1.0f));
         objectShader.setVec3("lightPos", rotatedLightPosition);
 
+        objectShader.setVec3("viewPos", camera.Position);
+
         // Construct our object's transformation matrices
         // note that we're translating the scene in the reverse direction of where we want to move
         glm::mat4 view = camera.GetViewMatrix();
