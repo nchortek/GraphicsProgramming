@@ -46,9 +46,8 @@ glm::vec3 cameraPos = cameraStartPos,
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f),
-    lightColor = glm::vec3(1.0f, 1.0f, 1.0f),
     objectPosition = glm::vec3(0.0f, 0.0f, 0.0f),
-    lightPosition = glm::vec3(1.2f, 1.5f, 2.0f);
+    lightPosition = glm::vec3(0.0f, 1.0f, 0.0f);
 
 int main()
 {
@@ -177,14 +176,33 @@ int main()
 
         // Render 
         objectShader.useProgram();
-        objectShader.setVec3("objectColor", objectColor);
-        objectShader.setVec3("lightColor", lightColor);
 
-        glm::mat4 lightRotation = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-        // Note that lightPosition is already in world space so we don't need a translate to get a rotated world space position
-        // like we do when setting the lightModel further down
-        glm::vec3 rotatedLightPosition = glm::vec3(lightRotation * glm::vec4(lightPosition, 1.0f));
-        objectShader.setVec3("lightPos", rotatedLightPosition);
+        // Material Properties
+        objectShader.setVec3("material.ambient", glm::vec3(0.25f, 0.20725f, 0.20725f));
+        objectShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.829f, 0.829f));
+        objectShader.setVec3("material.specular", glm::vec3(0.296648f, 0.296648f, 0.296648f));
+        objectShader.setFloat("material.shininess", 32.0f);
+
+        // Light Properties
+        float curTime = (float)glfwGetTime();
+        float positionVariance = curTime / 2.0f;
+        lightPosition.x = 2.0f * sinf(positionVariance);
+        lightPosition.z = 2.0f * cosf(positionVariance);
+
+        glm::vec3 lightColor;
+        // divide the current time by 4 to lengthen the sin period,
+        // slowing down the color's rate of change
+        float colorVariance = curTime / 4.0f;
+        lightColor.x = sinf(colorVariance * 2.0f);
+        lightColor.y = sinf(colorVariance * 0.7f);
+        lightColor.z = sinf(colorVariance * 1.3f);
+
+        glm::vec3 diffuseLight = lightColor * glm::vec3(0.5f);
+        glm::vec3 ambientLight = diffuseLight * glm::vec3(0.2f);
+        objectShader.setVec3("light.position", lightPosition);
+        objectShader.setVec3("light.ambient", ambientLight);
+        objectShader.setVec3("light.diffuse", diffuseLight);
+        objectShader.setVec3("light.specular", lightColor);
 
         objectShader.setVec3("viewPos", camera.Position);
 
@@ -219,7 +237,7 @@ int main()
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
 
-        glm::mat4 lightModel = lightRotation;
+        glm::mat4 lightModel = glm::mat4(1.0f);
         // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
         // of the light
         lightModel = glm::translate(lightModel, lightPosition);
