@@ -15,6 +15,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+unsigned int configureTexture(const char* texturePath);
 
 // Screen setting constants
 const unsigned int SCR_WIDTH = 800;
@@ -24,8 +25,10 @@ const char* objVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/
 const char* objFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/objectShader.fs";
 const char* lightVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.vs";
 const char* lightFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.fs";
-//const char* texturePath1 = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
-//const char* texturePath2 = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
+const char* diffuseMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2.png";
+const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2_specular.png";
+//const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
+//const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
 
 // Time between current frame and last frame
 float deltaTime = 0.0f;
@@ -81,54 +84,62 @@ int main()
         return -1;
     }
 
+    // Enable depth testing via the z-buffer
+    glEnable(GL_DEPTH_TEST);
+
     // Create shader program
     Shader objectShader(objVertShaderPath, objFragShaderPath);
     Shader lightShader(lightVertShaderPath, lightFragShaderPath);
 
     // TODO: Should these be placed in dedicated mesh files?
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
+
+    // Create and load textures
+    unsigned int diffuseMap = configureTexture(diffuseMapPath);
+    unsigned int specularMap = configureTexture(specularMapPath);
 
     // Create a VAO and VBO
     unsigned int objectVAO, lightVAO, VBO;
@@ -142,22 +153,27 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glBindVertexArray(lightVAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Enable depth testing via the z-buffer
-    glEnable(GL_DEPTH_TEST);
+    // Set texture uniforms
+    objectShader.useProgram();
+    objectShader.setInt("material.diffuseMap", 0);
+    objectShader.setInt("material.specularMap", 1);
 
     // Render loop
     while (!glfwWindowShouldClose(window))
@@ -178,10 +194,8 @@ int main()
         objectShader.useProgram();
 
         // Material Properties
-        objectShader.setVec3("material.ambient", glm::vec3(0.25f, 0.20725f, 0.20725f));
-        objectShader.setVec3("material.diffuse", glm::vec3(1.0f, 0.829f, 0.829f));
-        objectShader.setVec3("material.specular", glm::vec3(0.296648f, 0.296648f, 0.296648f));
-        objectShader.setFloat("material.shininess", 32.0f);
+        objectShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+        objectShader.setFloat("material.shininess", 64.0f);
 
         // Light Properties
         float curTime = (float)glfwGetTime();
@@ -190,12 +204,13 @@ int main()
         lightPosition.z = 2.0f * cosf(positionVariance);
 
         glm::vec3 lightColor;
+        lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
         // divide the current time by 4 to lengthen the sin period,
         // slowing down the color's rate of change
-        float colorVariance = curTime / 4.0f;
-        lightColor.x = sinf(colorVariance * 2.0f);
-        lightColor.y = sinf(colorVariance * 0.7f);
-        lightColor.z = sinf(colorVariance * 1.3f);
+        // float colorVariance = curTime / 4.0f;
+        // lightColor.x = sinf(colorVariance * 2.0f);
+        // lightColor.y = sinf(colorVariance * 0.7f);
+        // lightColor.z = sinf(colorVariance * 1.3f);
 
         glm::vec3 diffuseLight = lightColor * glm::vec3(0.5f);
         glm::vec3 ambientLight = diffuseLight * glm::vec3(0.2f);
@@ -225,6 +240,13 @@ int main()
         glm::mat4 normalModel = glm::inverse(objectModel);
         normalModel = glm::transpose(normalModel);
         objectShader.setMat3("normalModel", glm::mat3(normalModel));
+
+        // Bind Object Textures
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
 
         glBindVertexArray(objectVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -348,4 +370,49 @@ void processInput(GLFWwindow* window)
     {
         camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
     }
+}
+
+
+unsigned int configureTexture(const char* texturePath)
+{
+    unsigned int texture;
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(texturePath, &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        // TODO: Again, is this a proper initialization? We need a good default to avoid the unitialized memory issue
+        GLenum format = 0;
+        if (nrChannels == 1)
+        {
+            format = GL_RED;
+        }
+        else if (nrChannels == 3)
+        {
+            format = GL_RGB;
+        }
+        else if (nrChannels == 4)
+        {
+            format = GL_RGBA;
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+        return 0;
+    }
+
+    stbi_image_free(data);
+
+    return texture;
 }
