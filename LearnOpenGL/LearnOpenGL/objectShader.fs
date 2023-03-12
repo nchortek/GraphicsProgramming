@@ -7,7 +7,7 @@ struct Material {
 };
 
 struct Light {
-    vec3 position;
+    vec4 lightVector;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -25,7 +25,7 @@ out vec4 FragColor;
 
 void main()
 {
-    vec3 diffuseTexture = vec3(texture(material.diffuseMap, TexCoords));
+    vec3 diffuseTexture = texture(material.diffuseMap, TexCoords).rgb;
 
     // Ambient Lighting
 
@@ -34,9 +34,17 @@ void main()
     // Diffuse Lighting
 
     vec3 norm = normalize(Normal);
-    // What if we subtracted lightPos from FragPos instead?
-    // Also do lightPos and FragPos not need to be normalized individually before subtraction?
-    vec3 lightDir = normalize(light.position - FragPos);
+
+    vec3 lightDir;
+    // Light Vector is a positon vector
+    if (light.lightVector.w != 0.0f) {
+        lightDir = normalize(light.lightVector.xyz - FragPos);
+    } else {
+        // Light Vector is a direction vector
+        // Note that we negate the light vector so we have it points towards the light source
+        lightDir = normalize(-light.lightVector.xyz);
+    }
+
     // Make sure to clamp lower values to 0 (dot products become negative for angles greater than 90 degrees)
     float diffuseFactor = max(dot(norm, lightDir), 0.0f);
     vec3 diffuseColor = light.diffuse * diffuseFactor * diffuseTexture;
@@ -50,7 +58,7 @@ void main()
     // lightDir here.
     vec3 reflectDir = reflect(-lightDir, norm);
     float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
-    vec3 specularColor = light.specular * specularFactor * vec3(texture(material.specularMap, TexCoords));
+    vec3 specularColor = light.specular * specularFactor * texture(material.specularMap, TexCoords).rgb;
 
     vec3 lightAdjustedColor = ambientColor + diffuseColor + specularColor;
     FragColor = vec4(lightAdjustedColor, 1.0f);

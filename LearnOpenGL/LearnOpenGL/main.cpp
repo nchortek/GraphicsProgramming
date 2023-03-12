@@ -27,6 +27,8 @@ const char* lightVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenG
 const char* lightFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.fs";
 const char* diffuseMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2.png";
 const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2_specular.png";
+//const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/lighting_maps_specular_color.png";
+//const char* emissionMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/matrix.jpg";
 //const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
 //const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
 
@@ -48,9 +50,23 @@ glm::vec3 cameraPos = cameraStartPos,
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f),
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f),
-    objectPosition = glm::vec3(0.0f, 0.0f, 0.0f),
-    lightPosition = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f);
+glm::vec3 cubePositions[] =
+{
+    glm::vec3(0.0f,  0.0f,  0.0f),
+    glm::vec3(2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3(2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3(1.3f, -2.0f, -2.5f),
+    glm::vec3(1.5f,  2.0f, -2.5f),
+    glm::vec3(1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
+// w component set to 0.0 makes this a direction vector
+glm::vec4 lightVector = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
 
 int main()
 {
@@ -138,8 +154,8 @@ int main()
     };
 
     // Create and load textures
-    unsigned int diffuseMap = configureTexture(diffuseMapPath);
-    unsigned int specularMap = configureTexture(specularMapPath);
+    unsigned int diffuseMap = configureTexture(diffuseMapPath),
+        specularMap = configureTexture(specularMapPath);
 
     // Create a VAO and VBO
     unsigned int objectVAO, lightVAO, VBO;
@@ -190,31 +206,27 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Render 
+        // Render Cubes
         objectShader.useProgram();
+        glBindVertexArray(objectVAO);
+
+        // Bind Object Textures
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
 
         // Material Properties
-        objectShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
         objectShader.setFloat("material.shininess", 64.0f);
 
         // Light Properties
-        float curTime = (float)glfwGetTime();
-        float positionVariance = curTime / 2.0f;
-        lightPosition.x = 2.0f * sinf(positionVariance);
-        lightPosition.z = 2.0f * cosf(positionVariance);
-
         glm::vec3 lightColor;
         lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-        // divide the current time by 4 to lengthen the sin period,
-        // slowing down the color's rate of change
-        // float colorVariance = curTime / 4.0f;
-        // lightColor.x = sinf(colorVariance * 2.0f);
-        // lightColor.y = sinf(colorVariance * 0.7f);
-        // lightColor.z = sinf(colorVariance * 1.3f);
 
         glm::vec3 diffuseLight = lightColor * glm::vec3(0.5f);
         glm::vec3 ambientLight = diffuseLight * glm::vec3(0.2f);
-        objectShader.setVec3("light.position", lightPosition);
+        objectShader.setVec4("light.lightVector", lightVector);
         objectShader.setVec3("light.ambient", ambientLight);
         objectShader.setVec3("light.diffuse", diffuseLight);
         objectShader.setVec3("light.specular", lightColor);
@@ -230,27 +242,24 @@ int main()
         projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
         objectShader.setMat4("projection", projection);
 
-        // Calculate the model matrix for each object and pass it to shader before drawing
-        glm::mat4 objectModel = glm::mat4(1.0f);
-        objectModel = glm::translate(objectModel, objectPosition);
-        objectShader.setMat4("model", objectModel);
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            // Calculate the model matrix for each object and pass it to shader before drawing
+            glm::mat4 objectModel = glm::mat4(1.0f);
+            objectModel = glm::translate(objectModel, cubePositions[i]);
+            float angle = 20.0f * i;
+            objectModel = glm::rotate(objectModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            objectShader.setMat4("model", objectModel);
 
-        // Prepare the normal matrix for the objects normal vectors (used to transform normals into world space
-        // without suffering from non-uniform scaling distortions)
-        glm::mat4 normalModel = glm::inverse(objectModel);
-        normalModel = glm::transpose(normalModel);
-        objectShader.setMat3("normalModel", glm::mat3(normalModel));
+            // Prepare the normal matrix for the objects normal vectors (used to transform normals into world space
+            // without suffering from non-uniform scaling distortions)
+            glm::mat4 normalModel = glm::inverse(objectModel);
+            normalModel = glm::transpose(normalModel);
+            objectShader.setMat3("normalModel", glm::mat3(normalModel));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
-        // Bind Object Textures
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseMap);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, specularMap);
-
-        glBindVertexArray(objectVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
+        /*
         // Render light
         lightShader.useProgram();
         lightShader.setVec3("lightColor", lightColor);
@@ -262,12 +271,13 @@ int main()
         glm::mat4 lightModel = glm::mat4(1.0f);
         // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
         // of the light
-        lightModel = glm::translate(lightModel, lightPosition);
+        lightModel = glm::translate(lightModel, glm::vec3(lightVector));
         lightModel = glm::scale(lightModel, glm::vec3(0.2f));
         lightShader.setMat4("model", lightModel);
 
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        */
 
         // Swap color buffer once the new frame is ready
         glfwSwapBuffers(window);
