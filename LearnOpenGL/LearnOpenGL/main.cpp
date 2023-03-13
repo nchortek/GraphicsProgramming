@@ -65,9 +65,6 @@ glm::vec3 cubePositions[] =
     glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-// w component set to 0.0 makes this a direction vector
-glm::vec4 lightVector = glm::vec4(-0.2f, -1.0f, -0.3f, 0.0f);
-
 int main()
 {
     // Init glfw, setting to OpenGL 3.3 and the core-profile
@@ -203,7 +200,7 @@ int main()
         // 
         // glClearColor is a state-setting function, and glClear is a state-using function in that
         // it uses the current state to retrieve the clearing color from.
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Render Cubes
@@ -226,10 +223,15 @@ int main()
 
         glm::vec3 diffuseLight = lightColor * glm::vec3(0.5f);
         glm::vec3 ambientLight = diffuseLight * glm::vec3(0.2f);
-        objectShader.setVec4("light.lightVector", lightVector);
+        objectShader.setVec3("light.position", camera.Position);
+        objectShader.setVec3("light.direction", camera.Front);
+        objectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
         objectShader.setVec3("light.ambient", ambientLight);
         objectShader.setVec3("light.diffuse", diffuseLight);
         objectShader.setVec3("light.specular", lightColor);
+        objectShader.setFloat("light.constant", 1.0f);
+        objectShader.setFloat("light.linear", 0.09f);
+        objectShader.setFloat("light.quadratic", 0.032f);
 
         objectShader.setVec3("viewPos", camera.Position);
 
@@ -260,7 +262,7 @@ int main()
         }
 
         /*
-        // Render light
+        // Render lightsource
         lightShader.useProgram();
         lightShader.setVec3("lightColor", lightColor);
 
@@ -271,7 +273,7 @@ int main()
         glm::mat4 lightModel = glm::mat4(1.0f);
         // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
         // of the light
-        lightModel = glm::translate(lightModel, glm::vec3(lightVector));
+        lightModel = glm::translate(lightModel, glm::vec3(camera.Position));
         lightModel = glm::scale(lightModel, glm::vec3(0.2f));
         lightShader.setMat4("model", lightModel);
 
@@ -366,6 +368,7 @@ void processInput(GLFWwindow* window)
     {
         camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
     }
+
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
         camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
