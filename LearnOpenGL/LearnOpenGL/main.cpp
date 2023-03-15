@@ -221,11 +221,12 @@ int main()
         glm::vec3 lightColor;
         lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
-        glm::vec3 diffuseLight = lightColor * glm::vec3(0.5f);
-        glm::vec3 ambientLight = diffuseLight * glm::vec3(0.2f);
+        glm::vec3 diffuseLight = lightColor * glm::vec3(0.8f);
+        glm::vec3 ambientLight = diffuseLight * glm::vec3(0.1f);
         objectShader.setVec3("light.position", camera.Position);
         objectShader.setVec3("light.direction", camera.Front);
-        objectShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+        objectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(15.0f)));
+        objectShader.setFloat("light.innerCutOff", glm::cos(glm::radians(11.5f)));
         objectShader.setVec3("light.ambient", ambientLight);
         objectShader.setVec3("light.diffuse", diffuseLight);
         objectShader.setVec3("light.specular", lightColor);

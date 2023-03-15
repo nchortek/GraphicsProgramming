@@ -10,7 +10,8 @@ struct Light {
     // Spotlight Properties
     vec3 position;
     vec3 direction;
-    float cutOff;
+    float innerCutOff;
+    float outerCutOff;
 
     // Color Properties
     vec3 ambient;
@@ -45,7 +46,7 @@ void main()
     // Do full lighting calculations for fragments inside the spotlight, otherwise only use ambient
     // QUESTION: Do we need to take the absolute value of these cosine outputs? Why does this work with negative angles?
     // Do we actually get negative angles? 
-    if (theta > light.cutOff)
+    if (theta > light.outerCutOff)
     {
         // Diffuse Lighting
 
@@ -66,13 +67,21 @@ void main()
         float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
         vec3 specularColor = light.specular * specularFactor * texture(material.specularMap, TexCoords).rgb;
 
-        vec3 lightAdjustedColor = ambientColor + diffuseColor + specularColor;
+        // We'll add ambient later after adjusting for attenuation and spotlight intensity because ambient
+        // should be unaffected by our lightsource
+        vec3 lightAdjustedColor = diffuseColor + specularColor;
 
         // Calculate lighting attenuation
         float distance = length(light.position - FragPos);
-        float attenuation = 1.0f / (light.constant + (light.linear * distance) + (light.quadratic * pow(distance, 2.0f)));
-        lightAdjustedColor *= vec3(attenuation);
+        float attenuation = 1.0f / (light.constant + (light.linear * distance) + (light.quadratic * distance * distance));
+        lightAdjustedColor *= attenuation;
 
+        // Calculate spotlight fade
+        float spotlightIntensity = (theta - light.outerCutOff) / (light.innerCutOff - light.outerCutOff);
+        spotlightIntensity = clamp(spotlightIntensity, 0.0f, 1.0f);
+        lightAdjustedColor *= spotlightIntensity;
+
+        lightAdjustedColor += ambientColor;
         FragColor = vec4(lightAdjustedColor, 1.0f);
     }
     else
