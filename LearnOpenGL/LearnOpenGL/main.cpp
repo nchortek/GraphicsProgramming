@@ -223,16 +223,16 @@ int main()
 
         glm::vec3 diffuseLight = lightColor * glm::vec3(0.8f);
         glm::vec3 ambientLight = diffuseLight * glm::vec3(0.1f);
-        objectShader.setVec3("light.position", camera.Position);
-        objectShader.setVec3("light.direction", camera.Front);
-        objectShader.setFloat("light.outerCutOff", glm::cos(glm::radians(15.0f)));
-        objectShader.setFloat("light.innerCutOff", glm::cos(glm::radians(11.5f)));
-        objectShader.setVec3("light.ambient", ambientLight);
-        objectShader.setVec3("light.diffuse", diffuseLight);
-        objectShader.setVec3("light.specular", lightColor);
-        objectShader.setFloat("light.constant", 1.0f);
-        objectShader.setFloat("light.linear", 0.09f);
-        objectShader.setFloat("light.quadratic", 0.032f);
+        objectShader.setVec3("spotLight.position", camera.Position);
+        objectShader.setVec3("spotLight.direction", camera.Front);
+        objectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+        objectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(11.5f)));
+        objectShader.setVec3("spotLight.ambient", ambientLight);
+        objectShader.setVec3("spotLight.diffuse", diffuseLight);
+        objectShader.setVec3("spotLight.specular", lightColor);
+        objectShader.setFloat("spotLight.constant", 1.0f);
+        objectShader.setFloat("spotLight.linear", 0.09f);
+        objectShader.setFloat("spotLight.quadratic", 0.032f);
 
         objectShader.setVec3("viewPos", camera.Position);
 
