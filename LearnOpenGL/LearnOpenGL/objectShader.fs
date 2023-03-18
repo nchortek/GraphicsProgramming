@@ -93,7 +93,7 @@ vec3 ProcessDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, 
     vec3 ambientColor = light.ambient * diffuseTexture;
 
     // Diffuse
-    vec3 lightDir = normalize(light.position - FragPos);
+    vec3 lightDir = normalize(-light.direction);
     float diffuseFactor = max(dot(normal, lightDir), 0.0f);
     vec3 diffuseColor = light.diffuse * diffuseFactor * diffuseTexture;
 
@@ -112,7 +112,7 @@ vec3 ProcessPointLight(PointLight light, vec3 normal, vec3 viewDir, vec3 diffuse
     vec3 ambientColor = light.ambient * diffuseTexture;
 
     // Diffuse
-    vec3 lightDir = normalize(-light.direction);
+    vec3 lightDir = normalize(light.position - FragPos);
     float diffuseFactor = max(dot(normal, lightDir), 0.0f);
     vec3 diffuseColor = light.diffuse * diffuseFactor * diffuseTexture;
 

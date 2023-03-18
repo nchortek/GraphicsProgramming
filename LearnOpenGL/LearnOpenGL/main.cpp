@@ -9,6 +9,7 @@
 #include <Textures/stb_image.h>
 
 #include <iostream>
+#include <string>
 
 // Forward Declarations
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -16,6 +17,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int configureTexture(const char* texturePath);
+void setSpotLight(Shader shader, Camera camera);
+void setDirectionalLight(Shader shader);
+void setPointLights(Shader shader);
 
 // Screen setting constants
 const unsigned int SCR_WIDTH = 800;
@@ -27,10 +31,6 @@ const char* lightVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenG
 const char* lightFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.fs";
 const char* diffuseMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2.png";
 const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2_specular.png";
-//const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/lighting_maps_specular_color.png";
-//const char* emissionMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/matrix.jpg";
-//const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container.jpg";
-//const char* texturePath = "C:/GraphicsProgramming/LearnOpenGL/Textures/awesomeface.png";
 
 // Time between current frame and last frame
 float deltaTime = 0.0f;
@@ -63,6 +63,59 @@ glm::vec3 cubePositions[] =
     glm::vec3(1.5f,  2.0f, -2.5f),
     glm::vec3(1.5f,  0.2f, -1.5f),
     glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
+float vertices[] = {
+    // positions          // normals           // texture coords
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+};
+
+glm::vec3 pointLightColor = glm::vec3(1.0f, 0.72f, 0.11f);
+glm::vec3 pointLightPositions[] = {
+    glm::vec3(0.7f,  0.2f,  2.0f),
+    glm::vec3(2.3f, -3.3f, -4.0f),
+    glm::vec3(-4.0f,  2.0f, -12.0f),
+    glm::vec3(0.0f,  0.0f, -3.0f)
 };
 
 int main()
@@ -103,52 +156,6 @@ int main()
     // Create shader program
     Shader objectShader(objVertShaderPath, objFragShaderPath);
     Shader lightShader(lightVertShaderPath, lightFragShaderPath);
-
-    // TODO: Should these be placed in dedicated mesh files?
-    float vertices[] = {
-        // positions          // normals           // texture coords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-    };
 
     // Create and load textures
     unsigned int diffuseMap = configureTexture(diffuseMapPath),
@@ -218,21 +225,9 @@ int main()
         objectShader.setFloat("material.shininess", 64.0f);
 
         // Light Properties
-        glm::vec3 lightColor;
-        lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-
-        glm::vec3 diffuseLight = lightColor * glm::vec3(0.8f);
-        glm::vec3 ambientLight = diffuseLight * glm::vec3(0.1f);
-        objectShader.setVec3("spotLight.position", camera.Position);
-        objectShader.setVec3("spotLight.direction", camera.Front);
-        objectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-        objectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(11.5f)));
-        objectShader.setVec3("spotLight.ambient", ambientLight);
-        objectShader.setVec3("spotLight.diffuse", diffuseLight);
-        objectShader.setVec3("spotLight.specular", lightColor);
-        objectShader.setFloat("spotLight.constant", 1.0f);
-        objectShader.setFloat("spotLight.linear", 0.09f);
-        objectShader.setFloat("spotLight.quadratic", 0.032f);
+        setSpotLight(objectShader, camera);
+        setDirectionalLight(objectShader);
+        setPointLights(objectShader);
 
         objectShader.setVec3("viewPos", camera.Position);
 
@@ -262,25 +257,26 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        /*
-        // Render lightsource
+        // Render pointlights
         lightShader.useProgram();
-        lightShader.setVec3("lightColor", lightColor);
+        glBindVertexArray(lightVAO);
+
+        lightShader.setVec3("lightColor", pointLightColor);
 
         // Set up the light's transform matrices
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
 
-        glm::mat4 lightModel = glm::mat4(1.0f);
-        // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
-        // of the light
-        lightModel = glm::translate(lightModel, glm::vec3(camera.Position));
-        lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-        lightShader.setMat4("model", lightModel);
+        for (unsigned int i = 0; i < 4; i++) {
+            glm::mat4 lightModel = glm::mat4(1.0f);
+            // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
+            // of the light
+            lightModel = glm::translate(lightModel, glm::vec3(pointLightPositions[i]));
+            lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+            lightShader.setMat4("model", lightModel);
 
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        */
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // Swap color buffer once the new frame is ready
         glfwSwapBuffers(window);
@@ -429,4 +425,51 @@ unsigned int configureTexture(const char* texturePath)
     stbi_image_free(data);
 
     return texture;
+}
+
+void setSpotLight(Shader shader, Camera camera)
+{
+    glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    float outerCutOff = 10.0f;
+    float innerCutOff = 8.0f;
+    glm::vec3 diffuseLight = lightColor * glm::vec3(0.8f);
+    glm::vec3 ambientLight = diffuseLight * glm::vec3(0.1f);
+
+    shader.setVec3("spotLight.position", camera.Position);
+    shader.setVec3("spotLight.direction", camera.Front);
+    shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(outerCutOff)));
+    shader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(innerCutOff)));
+    shader.setVec3("spotLight.ambient", ambientLight);
+    shader.setVec3("spotLight.diffuse", diffuseLight);
+    shader.setVec3("spotLight.specular", lightColor);
+    shader.setFloat("spotLight.constant", 1.0f);
+    shader.setFloat("spotLight.linear", 0.09f);
+    shader.setFloat("spotLight.quadratic", 0.032f);
+}
+
+void setPointLights(Shader shader)
+{
+    glm::vec3 lightColor = pointLightColor;
+    glm::vec3 diffuseLight = lightColor * glm::vec3(0.2f);
+    glm::vec3 ambientLight = diffuseLight * glm::vec3(0.05f);
+
+    for (unsigned int i = 0; i < 4; i++)
+    {
+        std::string prefix = "pointLights[" + std::to_string(i) + "].";
+        shader.setVec3(prefix + "position", pointLightPositions[i]);
+        shader.setVec3(prefix + "ambient", ambientLight);
+        shader.setVec3(prefix + "diffuse", diffuseLight);
+        shader.setVec3(prefix + "specular", lightColor);
+        shader.setFloat(prefix + "constant", 1.0f);
+        shader.setFloat(prefix + "linear", 0.09f);
+        shader.setFloat(prefix + "quadratic", 0.032f);
+    }
+}
+
+void setDirectionalLight(Shader shader)
+{
+    shader.setVec3("directionalLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+    shader.setVec3("directionalLight.ambient", glm::vec3(0.02f));
+    shader.setVec3("directionalLight.diffuse", glm::vec3(0.1f));
+    shader.setVec3("directionalLight.specular", glm::vec3(0.3f));
 }
