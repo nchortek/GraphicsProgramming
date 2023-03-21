@@ -118,6 +118,7 @@ glm::vec3 pointLightPositions[] = {
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
 
+
 int main()
 {
     // Init glfw, setting to OpenGL 3.3 and the core-profile
@@ -207,7 +208,8 @@ int main()
         // 
         // glClearColor is a state-setting function, and glClear is a state-using function in that
         // it uses the current state to retrieve the clearing color from.
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Render Cubes
@@ -296,6 +298,7 @@ int main()
     return 0;
 }
 
+
 /// <summary>
 /// Ensures the viewport dimensions match those of the application window if/when it is resized
 /// </summary>
@@ -306,6 +309,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+
 
 /// <summary>
 /// Calculates yaw and pitch for creating a direction vector given the current and previous mouse positions
@@ -334,6 +338,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
+
 /// <summary>
 /// Adjusts the field of view based on user scroll-wheel input
 /// </summary>
@@ -344,6 +349,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
+
 
 /// <summary>
 /// Handle specific key presses
@@ -427,13 +433,14 @@ unsigned int configureTexture(const char* texturePath)
     return texture;
 }
 
+
 void setSpotLight(Shader shader, Camera camera)
 {
     glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     float outerCutOff = 10.0f;
     float innerCutOff = 8.0f;
     glm::vec3 diffuseLight = lightColor * glm::vec3(0.8f);
-    glm::vec3 ambientLight = diffuseLight * glm::vec3(0.1f);
+    glm::vec3 ambientLight = diffuseLight * glm::vec3(0.05f);
 
     shader.setVec3("spotLight.position", camera.Position);
     shader.setVec3("spotLight.direction", camera.Front);
@@ -446,6 +453,7 @@ void setSpotLight(Shader shader, Camera camera)
     shader.setFloat("spotLight.linear", 0.09f);
     shader.setFloat("spotLight.quadratic", 0.032f);
 }
+
 
 void setPointLights(Shader shader)
 {
@@ -466,10 +474,11 @@ void setPointLights(Shader shader)
     }
 }
 
+
 void setDirectionalLight(Shader shader)
 {
     shader.setVec3("directionalLight.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
     shader.setVec3("directionalLight.ambient", glm::vec3(0.02f));
-    shader.setVec3("directionalLight.diffuse", glm::vec3(0.1f));
-    shader.setVec3("directionalLight.specular", glm::vec3(0.3f));
+    shader.setVec3("directionalLight.diffuse", glm::vec3(0.06f));
+    shader.setVec3("directionalLight.specular", glm::vec3(0.2f));
 }
