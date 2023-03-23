@@ -1,15 +1,14 @@
+#include <Camera/camera.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <Shaders/shader.h>
-#include <Camera/camera.h>
-#include <Textures/stb_image.h>
-
 #include <iostream>
+#include <ModelLoading/model.h>
+#include <Shaders/shader.h>
 #include <string>
+#include <Textures/stb_image.h>
 
 // Forward Declarations
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -130,7 +129,7 @@ int main()
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
         return -1;
     }
@@ -147,7 +146,7 @@ int main()
     // Initialize GLAD (loads all OpenGL function pointers)
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        cout << "Failed to initialize GLAD" << endl;
         return -1;
     }
 
@@ -269,7 +268,8 @@ int main()
         lightShader.setMat4("view", view);
         lightShader.setMat4("projection", projection);
 
-        for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int i = 0; i < 4; i++)
+        {
             glm::mat4 lightModel = glm::mat4(1.0f);
             // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
             // of the light
@@ -424,7 +424,7 @@ unsigned int configureTexture(const char* texturePath)
     }
     else
     {
-        std::cout << "Failed to load texture" << std::endl;
+        cout << "Failed to load texture" << endl;
         return 0;
     }
 
@@ -463,7 +463,7 @@ void setPointLights(Shader shader)
 
     for (unsigned int i = 0; i < 4; i++)
     {
-        std::string prefix = "pointLights[" + std::to_string(i) + "].";
+        string prefix = "pointLights[" + to_string(i) + "].";
         shader.setVec3(prefix + "position", pointLightPositions[i]);
         shader.setVec3(prefix + "ambient", ambientLight);
         shader.setVec3(prefix + "diffuse", diffuseLight);
