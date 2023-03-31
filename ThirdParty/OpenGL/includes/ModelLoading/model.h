@@ -19,10 +19,12 @@
 
 using namespace std;
 
+unsigned int configureTexture(const char* path, const string& directory);
+
 class Model
 {
     public:
-        Model(char* path)
+        Model(const char* path)
         {
             this->loadModel(path);
         }
@@ -38,6 +40,7 @@ class Model
 
     private:
         // Model data
+        vector<Texture> loadedTextures;
         vector<Mesh> meshes;
         string directory;
 
@@ -56,13 +59,15 @@ class Model
 
             this->directory = path.substr(0, path.find_last_of('/'));
 
-            this->processNode(scene->mRootNode, scene);
+            this->processNode(scene->mRootNode, scene, 1);
+            // cout << "Finished loading model" << endl;
         }
 
-        void processNode(aiNode* node, const aiScene* scene)
+        void processNode(aiNode* node, const aiScene* scene, int count)
         {
             // Process this node's meshes
             unsigned int meshCount = node->mNumMeshes;
+            //cout << "Mesh count for node " << count << " is " << meshCount << endl;
             for (unsigned int i = 0; i < meshCount; i++)
             {
                 unsigned int meshIndex = node->mMeshes[i];
@@ -72,12 +77,17 @@ class Model
                 meshes.push_back(processedMesh);
             }
 
+            //cout << "Finished processing meshes for node " << count << endl;
+
             // Recursively process this node's child nodes
             unsigned int childCount = node->mNumChildren;
+
+            //cout << "Child count for node " << count << " is " << childCount << endl;
+
             for (unsigned int i = 0; i < childCount; i++)
             {
                 aiNode* child = node->mChildren[i];
-                processNode(child, scene);
+                processNode(child, scene, ++count);
             }
         }
 
@@ -157,8 +167,92 @@ class Model
 
         vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
         {
+            vector<Texture> textures;
 
+            unsigned int textureCount = mat->GetTextureCount(type);
+            for (unsigned int i = 0; i < textureCount; i++)
+            {
+                bool skip = false;
+                Texture currentTexture;
+
+                aiString filePath;
+                mat->GetTexture(type, i, &filePath);
+
+                unsigned int loadedTexturesCount = this->loadedTextures.size();
+                for (unsigned int j = 0; j < loadedTexturesCount; j++)
+                {
+                    currentTexture = this->loadedTextures[j];
+                    if (std::strcmp(currentTexture.path.data(), filePath.C_Str()) == 0)
+                    {
+                        textures.push_back(currentTexture);
+
+                        skip = true;
+                        break;
+                    }
+                }
+
+                if (!skip)
+                {
+                    Texture currentTexture;
+                    currentTexture.id = configureTexture(filePath.C_Str(), directory);
+                    currentTexture.type = typeName;
+                    currentTexture.path = filePath.C_Str();
+                    textures.push_back(currentTexture);
+                    this->loadedTextures.push_back(currentTexture);
+                }
+            }
+
+            return textures;
         }
 };
+
+unsigned int configureTexture(const char* path, const string& directory)
+{
+    unsigned int texture;
+    int width, height, nrChannels;
+
+    string filename = string(path);
+    filename = directory + '/' + filename;
+
+    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        // TODO: Again, is this a proper initialization? We need a good default to avoid the unitialized memory issue
+        GLenum format = 0;
+        if (nrChannels == 1)
+        {
+            format = GL_RED;
+        }
+        else if (nrChannels == 3)
+        {
+            format = GL_RGB;
+        }
+        else if (nrChannels == 4)
+        {
+            format = GL_RGBA;
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(data);
+        return texture;
+    }
+    else
+    {
+        cout << "Failed to load texture" << endl;
+
+        stbi_image_free(data);
+        return 0;
+    }
+}
 
 #endif

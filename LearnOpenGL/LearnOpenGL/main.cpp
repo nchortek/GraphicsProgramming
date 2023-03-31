@@ -15,21 +15,28 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+/*
 unsigned int configureTexture(const char* texturePath);
 void setSpotLight(Shader shader, Camera camera);
 void setDirectionalLight(Shader shader);
 void setPointLights(Shader shader);
+*/
 
 // Screen setting constants
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+const char* assimpVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/assimpShader.vs";
+const char* assimpFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/assimpShader.fs";
+
+const char* backpackObjectPath = "C:/GraphicsProgramming/LearnOpenGL/Resources/Objects/backpack/backpack.obj";
+
 const char* objVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/objectShader.vs";
 const char* objFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/objectShader.fs";
 const char* lightVertShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.vs";
 const char* lightFragShaderPath = "C:/GraphicsProgramming/LearnOpenGL/LearnOpenGL/lightShader.fs";
-const char* diffuseMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2.png";
-const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Textures/container2_specular.png";
+const char* diffuseMapPath = "C:/GraphicsProgramming/LearnOpenGL/Resources/Textures/container2.png";
+const char* specularMapPath = "C:/GraphicsProgramming/LearnOpenGL/Resources/Textures/container2_specular.png";
 
 // Time between current frame and last frame
 float deltaTime = 0.0f;
@@ -37,18 +44,13 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // Camera / Mouse Positions
-glm::vec3 cameraStartPos = glm::vec3(0.0f, 1.0f, 5.0f);
+glm::vec3 cameraStartPos = glm::vec3(0.0f, 0.0f, 3.0f);
 Camera camera(cameraStartPos);
 float lastX = SCR_WIDTH / 2,
     lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
-// Camera speed and orientation
-const float cameraSpeed = 2.5f;
-glm::vec3 cameraPos = cameraStartPos,
-    cameraFront = glm::vec3(0.0f, 0.0f, -1.0f),
-    cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
+/*
 glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f);
 glm::vec3 cubePositions[] =
 {
@@ -116,7 +118,7 @@ glm::vec3 pointLightPositions[] = {
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
-
+*/
 
 int main()
 {
@@ -153,6 +155,54 @@ int main()
     // Enable depth testing via the z-buffer
     glEnable(GL_DEPTH_TEST);
 
+    // Set stbi to flip loaded textures on the y-axis before we load any models.
+    stbi_set_flip_vertically_on_load(true);
+
+    Shader assimpShader(assimpVertShaderPath, assimpFragShaderPath);
+    Model guitarModel(backpackObjectPath);
+
+    while (!glfwWindowShouldClose(window))
+    {
+        // Check for specific key presses
+        processInput(window);
+
+        // Execute render commands
+        // 
+        // (Currently just clearing the previous frame, displaying the specified color)
+        // 
+        // glClearColor is a state-setting function, and glClear is a state-using function in that
+        // it uses the current state to retrieve the clearing color from.
+        // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Enable shader before setting uniforms
+        assimpShader.useProgram();
+
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        assimpShader.setMat4("projection", projection);
+        assimpShader.setMat4("view", view);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        // translate it down so it's at the center of the scene
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        // it's a bit too big for our scene, so scale it down
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        assimpShader.setMat4("model", model);
+
+        // Render!
+        guitarModel.Draw(assimpShader);
+
+
+        // Swap color buffer once the new frame is ready
+        glfwSwapBuffers(window);
+
+        // Poll IO events (updates the window state and calls corresponding callback functions)
+        glfwPollEvents();
+    }
+    
+    /*
     // Create shader program
     Shader objectShader(objVertShaderPath, objFragShaderPath);
     Shader lightShader(lightVertShaderPath, lightFragShaderPath);
@@ -293,7 +343,9 @@ int main()
     glDeleteBuffers(1, &VBO);
     objectShader.deleteProgram();
     lightShader.deleteProgram();
+    */
 
+    assimpShader.deleteProgram();
     glfwTerminate();
     return 0;
 }
@@ -388,7 +440,7 @@ void processInput(GLFWwindow* window)
     }
 }
 
-
+/*
 unsigned int configureTexture(const char* texturePath)
 {
     unsigned int texture;
@@ -421,16 +473,17 @@ unsigned int configureTexture(const char* texturePath)
 
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(data);
+        return texture;
     }
     else
     {
         cout << "Failed to load texture" << endl;
+
+        stbi_image_free(data);
         return 0;
     }
-
-    stbi_image_free(data);
-
-    return texture;
 }
 
 
@@ -482,3 +535,4 @@ void setDirectionalLight(Shader shader)
     shader.setVec3("directionalLight.diffuse", glm::vec3(0.06f));
     shader.setVec3("directionalLight.specular", glm::vec3(0.2f));
 }
+*/

@@ -34,5 +34,7 @@
     </None>
     <None Include="lightShader.fs" />
     <None Include="lightShader.vs" />
+    <None Include="assimpShader.fs" />
+    <None Include="assimpShader.vs" />
   </ItemGroup>
 </Project>

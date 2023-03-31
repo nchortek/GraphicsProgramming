@@ -32,6 +32,9 @@ struct Texture
     // N is a number ranging from 1 to the maximum
     // number of textures allowed by OpenGL
     string type;
+
+    // Relative filepath
+    string path;
 };
 
 class Mesh
@@ -72,6 +75,7 @@ class Mesh
                 string name = currentTexture.type;
 
                 // TODO: Might be better off using an enum and switch case here as opposed to hard coding the string
+                // Also we should define the strings in a central location instead of having "magic" variables
                 if (name == "texture_diffuse")
                 {
                     typedTextureIndex = diffuseIndex;
@@ -83,7 +87,7 @@ class Mesh
                     specularIndex++;
                 }
 
-                string uniform = "material." + name + to_string(typedTextureIndex);
+                string uniform = /*"material." +*/ name + to_string(typedTextureIndex);
                 shader.setInt(uniform.c_str(), i);
 
                 glBindTexture(GL_TEXTURE_2D, currentTexture.id);
