@@ -93,15 +93,13 @@ class Mesh
                 glBindTexture(GL_TEXTURE_2D, currentTexture.id);
             }
 
-            // Best practice to reset to defaults
-            glActiveTexture(GL_TEXTURE0);
-
             // Render
             glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(this->indices.size()), GL_UNSIGNED_INT, 0);
 
-            // Unbind VAO
+            // Unbind VAO and reset Active Texture
             glBindVertexArray(0);
+            glActiveTexture(GL_TEXTURE0);
         }
 
     private:
@@ -118,10 +116,12 @@ class Mesh
             glBindVertexArray(this->VAO);
 
             glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(this->vertices), &(this->vertices[0]), GL_STATIC_DRAW);
+            // Note using sizeof(vertices) instead of vertices.size() * sizeof(Vertex) results in an error (same situation for EBO/indices below)
+            // Why though???
+            glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &(this->vertices[0]), GL_STATIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), &(this->indices[0]), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(unsigned int), &(this->indices[0]), GL_STATIC_DRAW);
 
             // Set up Vertex position attribute
             glEnableVertexAttribArray(0);
