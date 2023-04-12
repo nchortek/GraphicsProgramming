@@ -161,6 +161,9 @@ int main()
     Shader assimpShader(assimpVertShaderPath, assimpFragShaderPath);
     Model guitarModel(backpackObjectPath);
 
+    // draw in wireframe
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     while (!glfwWindowShouldClose(window))
     {
         // Check for specific key presses

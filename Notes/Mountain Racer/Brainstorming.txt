@@ -1,0 +1,70 @@
+Game concept:
+
+
+Single-player time trial driving game on a snowy mountain! You race a snowmobile down a mountain pass and avoid obstacles (trees & big boulders)
+
+Gameplay would be barebones -- maybe just a timer and obstacles along the way to not crash into. Goal could be to get to the end as fast as possible without crashing.
+
+Then just focus everything else of the graphics engine and what not--really the "game" is just there to give the renderer something to work with. 
+
+------------------
+
+Gameplay:
+
+Spawn at the peak--then theres a 3-2-1-GO countdown and a timer starts
+Drive down the mountain, evading obstacles on your way to the finish line.
+Play for the best time!
+
+Speed ranges from 0 to some maximum
+
+Acceleration happens at one rate
+breaking happens at another rate
+* Acceleration should be relatively slow and gradual, breaking should be quick and more instantaneous
+
+
+Crashing into an obstacle slows your speed to 0, and you have to reverse to get around it.
+If you crash 3 times, your engine stalls for a few seconds before starting up again
+
+
+------------------
+
+
+Graphical elements to have:
+
+
+
+****Deferred PBR renderer!!!
+
+Day/Night cycles (sunrise and sunset)
+* Nice lighting effects
+* Snowmobile can have headlights that you can toggle on / off to improve visiblity at night (and during a blizzard!)
+
+
+Weather effects!
+* Clear sky, sunny
+* overcast w/ light snowfall
+* Blizzard!
+
+Track starts out sunny, then there are two fixed points at the 1-third and 2-thirds marks where
+the weather transitions more towards Blizzard
+
+As the weather progresses from clear to light snow to blizzard, visibility gets worse and worse, giving you
+less time to react to obstacles. (And also just fun to play with weather particle affects, fog, lighting, etc)
+
+
+Raymarched volumetric clouds!
+
+Shadows
+
+Snow deformation via heightfields
+
+
+--------------------
+
+
+Gameplan:
+
+Divide the project into two "phases"
+
+1. Deferred PBR Renderer
+2. Add game mechanics and vehicle/character interactions on-top of it afterwards
