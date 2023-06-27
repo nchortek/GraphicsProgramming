@@ -15,12 +15,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-/*
+
 unsigned int configureTexture(const char* texturePath);
 void setSpotLight(Shader shader, Camera camera);
 void setDirectionalLight(Shader shader);
 void setPointLights(Shader shader);
-*/
+
 
 // Screen setting constants
 const unsigned int SCR_WIDTH = 800;
@@ -50,7 +50,7 @@ float lastX = SCR_WIDTH / 2,
     lastY = SCR_HEIGHT / 2;
 bool firstMouse = true;
 
-/*
+
 glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f);
 glm::vec3 cubePositions[] =
 {
@@ -118,7 +118,9 @@ glm::vec3 pointLightPositions[] = {
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3(0.0f,  0.0f, -3.0f)
 };
-*/
+
+// Toggle this to switch between using assimp model loading vs manually defined geometry
+const bool useAssimp = false;
 
 int main()
 {
@@ -158,197 +160,208 @@ int main()
     // Set stbi to flip loaded textures on the y-axis before we load any models.
     stbi_set_flip_vertically_on_load(true);
 
-    Shader assimpShader(assimpVertShaderPath, assimpFragShaderPath);
-    Model guitarModel(backpackObjectPath);
-
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    while (!glfwWindowShouldClose(window))
+    if (useAssimp)
     {
-        // Check for specific key presses
-        processInput(window);
+        // --------------------- Assimp Model Rendering ---------------------
 
-        // Execute render commands
-        // 
-        // (Currently just clearing the previous frame, displaying the specified color)
-        // 
-        // glClearColor is a state-setting function, and glClear is a state-using function in that
-        // it uses the current state to retrieve the clearing color from.
-        // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        Shader assimpShader(assimpVertShaderPath, assimpFragShaderPath);
+        Model guitarModel(backpackObjectPath);
 
-        // Enable shader before setting uniforms
-        assimpShader.useProgram();
+        while (!glfwWindowShouldClose(window))
+        {
+            // Check for specific key presses
+            processInput(window);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
-        assimpShader.setMat4("projection", projection);
-        assimpShader.setMat4("view", view);
+            // Execute render commands
+            // 
+            // (Currently just clearing the previous frame, displaying the specified color)
+            // 
+            // glClearColor is a state-setting function, and glClear is a state-using function in that
+            // it uses the current state to retrieve the clearing color from.
+            // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        // translate it down so it's at the center of the scene
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        // it's a bit too big for our scene, so scale it down
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        assimpShader.setMat4("model", model);
+            // Enable shader before setting uniforms
+            assimpShader.useProgram();
 
-        // Render!
-        guitarModel.Draw(assimpShader);
+            glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+            glm::mat4 view = camera.GetViewMatrix();
+            assimpShader.setMat4("projection", projection);
+            assimpShader.setMat4("view", view);
+
+            glm::mat4 model = glm::mat4(1.0f);
+            // translate it down so it's at the center of the scene
+            model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+            // it's a bit too big for our scene, so scale it down
+            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+            assimpShader.setMat4("model", model);
+
+            // TODO: Set normal model here
+
+            // Render!
+            guitarModel.draw(assimpShader);
 
 
-        // Swap color buffer once the new frame is ready
-        glfwSwapBuffers(window);
+            // Swap color buffer once the new frame is ready
+            glfwSwapBuffers(window);
 
-        // Poll IO events (updates the window state and calls corresponding callback functions)
-        glfwPollEvents();
+            // Poll IO events (updates the window state and calls corresponding callback functions)
+            glfwPollEvents();
+        }
+
+        guitarModel.freeResources();
+        assimpShader.deleteProgram();
     }
-    
-    /*
-    // Create shader program
-    Shader objectShader(objVertShaderPath, objFragShaderPath);
-    Shader lightShader(lightVertShaderPath, lightFragShaderPath);
-
-    // Create and load textures
-    unsigned int diffuseMap = configureTexture(diffuseMapPath),
-        specularMap = configureTexture(specularMapPath);
-
-    // Create a VAO and VBO
-    unsigned int objectVAO, lightVAO, VBO;
-    glGenVertexArrays(1, &objectVAO);
-    glGenVertexArrays(1, &lightVAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(objectVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    glBindVertexArray(lightVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // Set texture uniforms
-    objectShader.useProgram();
-    objectShader.setInt("material.diffuseMap", 0);
-    objectShader.setInt("material.specularMap", 1);
-
-    // Render loop
-    while (!glfwWindowShouldClose(window))
+    else 
     {
-        // Check for specific key presses
-        processInput(window);
+        // --------------------- Container & Lighting Rendering ---------------------
 
-        // Execute render commands
-        // 
-        // (Currently just clearing the previous frame, displaying the specified color)
-        // 
-        // glClearColor is a state-setting function, and glClear is a state-using function in that
-        // it uses the current state to retrieve the clearing color from.
-        // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // Create shader program
+        Shader objectShader(objVertShaderPath, objFragShaderPath);
+        Shader lightShader(lightVertShaderPath, lightFragShaderPath);
 
-        // Render Cubes
-        objectShader.useProgram();
+        // Create and load textures
+        unsigned int diffuseMap = configureTexture(diffuseMapPath),
+            specularMap = configureTexture(specularMapPath);
+
+        // Create a VAO and VBO
+        unsigned int objectVAO, lightVAO, VBO;
+        glGenVertexArrays(1, &objectVAO);
+        glGenVertexArrays(1, &lightVAO);
+        glGenBuffers(1, &VBO);
+
         glBindVertexArray(objectVAO);
 
-        // Bind Object Textures
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseMap);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, specularMap);
+        // Position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
 
-        // Material Properties
-        objectShader.setFloat("material.shininess", 64.0f);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
 
-        // Light Properties
-        setSpotLight(objectShader, camera);
-        setDirectionalLight(objectShader);
-        setPointLights(objectShader);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
 
-        objectShader.setVec3("viewPos", camera.Position);
-
-        // Construct our object's transformation matrices
-        // note that we're translating the scene in the reverse direction of where we want to move
-        glm::mat4 view = camera.GetViewMatrix();
-        objectShader.setMat4("view", view);
-
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
-        objectShader.setMat4("projection", projection);
-
-        for (unsigned int i = 0; i < 10; i++)
-        {
-            // Calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 objectModel = glm::mat4(1.0f);
-            objectModel = glm::translate(objectModel, cubePositions[i]);
-            float angle = 20.0f * i;
-            objectModel = glm::rotate(objectModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            objectShader.setMat4("model", objectModel);
-
-            // Prepare the normal matrix for the objects normal vectors (used to transform normals into world space
-            // without suffering from non-uniform scaling distortions)
-            glm::mat4 normalModel = glm::inverse(objectModel);
-            normalModel = glm::transpose(normalModel);
-            objectShader.setMat3("normalModel", glm::mat3(normalModel));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-
-        // Render pointlights
-        lightShader.useProgram();
         glBindVertexArray(lightVAO);
 
-        lightShader.setVec3("lightColor", pointLightColor);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-        // Set up the light's transform matrices
-        lightShader.setMat4("view", view);
-        lightShader.setMat4("projection", projection);
+        // Position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
 
-        for (unsigned int i = 0; i < 4; i++)
+        // Set texture uniforms
+        objectShader.useProgram();
+        objectShader.setInt("material.diffuseMap", 0);
+        objectShader.setInt("material.specularMap", 1);
+
+        // Render loop
+        while (!glfwWindowShouldClose(window))
         {
-            glm::mat4 lightModel = glm::mat4(1.0f);
-            // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
-            // of the light
-            lightModel = glm::translate(lightModel, glm::vec3(pointLightPositions[i]));
-            lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-            lightShader.setMat4("model", lightModel);
+            // Check for specific key presses
+            processInput(window);
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            // Execute render commands
+            // 
+            // (Currently just clearing the previous frame, displaying the specified color)
+            // 
+            // glClearColor is a state-setting function, and glClear is a state-using function in that
+            // it uses the current state to retrieve the clearing color from.
+            // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // Render Cubes
+            objectShader.useProgram();
+            glBindVertexArray(objectVAO);
+
+            // Bind Object Textures
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, specularMap);
+
+            // Material Properties
+            objectShader.setFloat("material.shininess", 64.0f);
+
+            // Light Properties
+            setSpotLight(objectShader, camera);
+            setDirectionalLight(objectShader);
+            setPointLights(objectShader);
+
+            objectShader.setVec3("viewPos", camera.Position);
+
+            // Construct our object's transformation matrices
+            // note that we're translating the scene in the reverse direction of where we want to move
+            glm::mat4 view = camera.GetViewMatrix();
+            objectShader.setMat4("view", view);
+
+            glm::mat4 projection;
+            projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
+            objectShader.setMat4("projection", projection);
+
+            for (unsigned int i = 0; i < 10; i++)
+            {
+                // Calculate the model matrix for each object and pass it to shader before drawing
+                glm::mat4 objectModel = glm::mat4(1.0f);
+                objectModel = glm::translate(objectModel, cubePositions[i]);
+                float angle = 20.0f * i;
+                objectModel = glm::rotate(objectModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                objectShader.setMat4("model", objectModel);
+
+                // Prepare the normal matrix for the objects normal vectors (used to transform normals into world space
+                // without suffering from non-uniform scaling distortions)
+                glm::mat4 normalModel = glm::inverse(objectModel);
+                normalModel = glm::transpose(normalModel);
+                objectShader.setMat3("normalModel", glm::mat3(normalModel));
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+
+            // Render pointlights
+            lightShader.useProgram();
+            glBindVertexArray(lightVAO);
+
+            lightShader.setVec3("lightColor", pointLightColor);
+
+            // Set up the light's transform matrices
+            lightShader.setMat4("view", view);
+            lightShader.setMat4("projection", projection);
+
+            for (unsigned int i = 0; i < 4; i++)
+            {
+                glm::mat4 lightModel = glm::mat4(1.0f);
+                // Because the lightModel will be acting upon object-space vertex coordinates we need to translate to the world space position
+                // of the light
+                lightModel = glm::translate(lightModel, glm::vec3(pointLightPositions[i]));
+                lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+                lightShader.setMat4("model", lightModel);
+
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+
+            // Swap color buffer once the new frame is ready
+            glfwSwapBuffers(window);
+
+            // Poll IO events (updates the window state and calls corresponding callback functions)
+            glfwPollEvents();
         }
 
-        // Swap color buffer once the new frame is ready
-        glfwSwapBuffers(window);
-
-        // Poll IO events (updates the window state and calls corresponding callback functions)
-        glfwPollEvents();
+        // Memory clean-up
+        glDeleteVertexArrays(1, &objectVAO);
+        glDeleteVertexArrays(1, &lightVAO);
+        glDeleteBuffers(1, &VBO);
+        objectShader.deleteProgram();
+        lightShader.deleteProgram();
     }
 
-    // Memory clean-up
-    glDeleteVertexArrays(1, &objectVAO);
-    glDeleteVertexArrays(1, &lightVAO);
-    glDeleteBuffers(1, &VBO);
-    objectShader.deleteProgram();
-    lightShader.deleteProgram();
-    */
-
-    assimpShader.deleteProgram();
     glfwTerminate();
     return 0;
 }
@@ -443,7 +456,7 @@ void processInput(GLFWwindow* window)
     }
 }
 
-/*
+
 unsigned int configureTexture(const char* texturePath)
 {
     unsigned int texture;
@@ -538,4 +551,3 @@ void setDirectionalLight(Shader shader)
     shader.setVec3("directionalLight.diffuse", glm::vec3(0.06f));
     shader.setVec3("directionalLight.specular", glm::vec3(0.2f));
 }
-*/

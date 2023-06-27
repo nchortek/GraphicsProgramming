@@ -29,12 +29,21 @@ class Model
             this->loadModel(path);
         }
 
-        void Draw(Shader& shader)
+        void draw(Shader& shader)
         {
             unsigned int meshCount = this->meshes.size();
             for (unsigned int i = 0; i < meshCount; i++)
             {
-                this->meshes[i].Draw(shader);
+                this->meshes[i].draw(shader);
+            }
+        }
+
+        void freeResources()
+        {
+            unsigned int meshCount = this->meshes.size();
+            for (unsigned int i = 0; i < meshCount; i++)
+            {
+                this->meshes[i].freeResources();
             }
         }
 

@@ -58,7 +58,7 @@ class Mesh
         }
 
         // Renders the mesh
-        void Draw(Shader& shader)
+        void draw(Shader& shader)
         {
             unsigned int diffuseIndex = 1,
                 specularIndex = 1;
@@ -102,6 +102,13 @@ class Mesh
             glActiveTexture(GL_TEXTURE0);
         }
 
+        void freeResources()
+        {
+            glDeleteVertexArrays(1, &(this->VAO));
+            glDeleteBuffers(1, &(this->VBO));
+            glDeleteBuffers(1, &(this->EBO));
+        }
+
     private:
         // Render data (Vertex Buffer Object and Element Buffer Object)
         unsigned int VBO, EBO;
@@ -118,6 +125,9 @@ class Mesh
             glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
             // Note using sizeof(vertices) instead of vertices.size() * sizeof(Vertex) results in an error (same situation for EBO/indices below)
             // Why though???
+            // Answer: sizeof() returns the compile-time size of a given object. Vectors encapsulate dynamic size arrays, resizing as needed during run-time,
+            // so sizeof(vector) has no knowledge of the number of elements actually stored in the vector. Instead, sizeof(vector) returns the compile-time
+            // memory used by the vector class, rather than the memory taken up by the elements currently stored in this particular vector object during run-time.
             glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &(this->vertices[0]), GL_STATIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);

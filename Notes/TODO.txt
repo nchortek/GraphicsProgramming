@@ -1,0 +1,98 @@
+Add lighting to the LearnOpenGL model/mesh renderer
+
+
+Re-write it all in Vulkan
+
+
+Build a deferred PBR renderer in Vulkan
+** Best way to make the deferred renderer??????????
+
+Build Mountain Racer on top of the renderer
+
+Then make a Path Tracer w/ Vulkan!
+
+
+
+
+-------------------------------------
+
+Game Engine Architecture - Important Chapters
+
+
+
+
+Runtime Egine Architecture (pg. 38)
+
+pg 39: Huge diagram of an entire game system (OS | Game Assets | Rendering | Gameplay)
+pg 45 - 50: Rendering Engine
+^ overview 
+
+
+
+Game Loop and Real-Time Simulation (pg. 525)
+
+
+
+
+Rendering Engine (pg. 621)
+^ very in-depth
+
+pg 621 - 667: Foundations of Depth-Buffered Triangle Rasterization
+pg 667 - 697: Rendering Pipeline
+
+
+
+
+
+-----------------------------------------
+
+
+Treat it like a long-term project for my job.
+
+
+
+
+Product Spec (desired features, gameplay elements, rendering elements, etc.)
+** What picture does the puzzle make when it's finished?
+
+Engineering Spec (High-level system design --> game aspects, rendering engine aspects, etc. Leverage the Runtime Engine Architecture diagrams for this)
+** How do the individual puzzle pieces fit together? What are the individual puzzle pieces?
+
+Engineering Specs for individual components (lower-level aspects w/ classes and maybe rough notes on necessary methods/functions/properties for each class)
+** What's on each puzzle piece? What's the shape of each one?
+
+Then do some project management.
+--> JIRA programs (Gameplay/UI & Menus | Rendering Engine) --> Epics --> Individual Tickets
+
+Then do time estimates at each level
+
+Set weekly goals / deliverables to stay on track
+
+Each week review progress like a stand-up
+
+
+----------------------------------------
+
+
+High level timing:
+
+
+Add lighting to LearnOpenGL and re-write it all in Vulkan
+* 1.5 months: Done by end of July 2023
+
+Real-Time Deferred PBR Renderer w/ Simple Racing Game built on top (C++ / Vulkan / GLSL)
+* 7 months: August 2023 - February 2024
+
+Offline Vulkan Path Tracer (C++ / Vulkan / GLSL)
+* 7 months: March 2024 - September 2024
+
+Pivot to Full Job-Hunt Mode
+* October 2024 onwards
+* If nothing by Spring, reflect and adjust approach
+
+----------------------------------------
+
+********************* Loop in Isabelle as an accountability partner! Communicate timelines (High level plan, project timelines, monthly deliverables,
+weekly deliverables)
+
+^ She can be like my Project Manager lol
