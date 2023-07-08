@@ -120,7 +120,7 @@ glm::vec3 pointLightPositions[] = {
 };
 
 // Toggle this to switch between using assimp model loading vs manually defined geometry
-const bool useAssimp = false;
+const bool useAssimp = true;
 
 int main()
 {
