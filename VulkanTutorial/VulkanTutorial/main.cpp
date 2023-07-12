@@ -11,6 +11,8 @@
 // or by providing a custom deleter to either std::unique_ptr or std::shared_ptr, depending on your
 // ownership requirements. RAII is the recommended model for larger Vulkan programs, but for learning
 // purposes it's always good to know what's going on behind the scenes.
+//
+// Potentially accomplish this via RAII object/class management
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -26,6 +28,7 @@ public:
 
 private:
 	GLFWwindow* window;
+	VkInstance instance;
 
 	void initWindow() {
 		glfwInit();
@@ -35,7 +38,25 @@ private:
 	}
 
 	void initVulkan() {
+		createInstance();
+	}
 
+	void createInstance() {
+		// Note that delcaring this struct with empty braces causes it to be initialized via
+		// "value initialization".
+		VkApplicationInfo appInfo{};
+		// Question: Why does vulkan need to store a structure type enum? Are struct types
+		// not inherent / programmatically checkable?
+		// Answer (I think): Vulkan was written in C, which does not support runtime type checking.
+		// C++ can support runtime type checks, though, assuming RTTI is enabled
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName = "Hello Triangle";
+		appInfo.applicationVersion = VK_API_VERSION_1_0;
+		appInfo.pEngineName = "No Engine";
+		appInfo.engineVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_0;
+
+		// TODO: Need to create a VkInstanceCreateInfo object
 	}
 
 	void mainLoop() {
