@@ -1,0 +1,13 @@
+
+
+
+No copy-pasting code.
+Only write code you understand!
+If you don't understand it, research / play around with it until you do
+--> But don't go on tangents or down rabbit holes, learn just enough so you know how the code works
+--> Also in tutorials feel free to write down things you learn that would be important to remember in the future!
+--> --> Like how value initialization is populating a given struct, for example
+
+Keep moving forward!
+--> When working and you think of things you'd like to do in the future, note them in todo comments
+--> --> Eventually these can become github issues / "tickets"

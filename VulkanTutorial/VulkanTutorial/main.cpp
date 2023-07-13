@@ -56,7 +56,28 @@ private:
 		appInfo.engineVersion = VK_API_VERSION_1_0;
 		appInfo.apiVersion = VK_API_VERSION_1_0;
 
-		// TODO: Need to create a VkInstanceCreateInfo object
+		// TODO: Do a refresher on pointers and references
+
+		VkInstanceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+
+		uint32_t glfwExtensionCount = 0;
+		const char** glfwExtensions;
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		createInfo.enabledExtensionCount = glfwExtensionCount;
+
+		// TODO: ppEnabledExtensionNames is defined as type "const char* const*" -- What exactly does that mean? Both the double pointer and the double const.
+		createInfo.ppEnabledExtensionNames = glfwExtensions;
+		createInfo.enabledLayerCount = 0;
+
+		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create VkInstance!");
+		}
+		else {
+			std::cout << "VkInstance successfully created." << std::endl;
+		}
 	}
 
 	void mainLoop() {
