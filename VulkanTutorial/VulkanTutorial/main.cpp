@@ -1,5 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+// TODO: Investigate if I need to be using the MINGW64 Binaries since that's what my git bash is.
+// (I don't think so since I use visual studio for editing and compiling, and MINGW64 is just my bash shell)
 
 #include <iostream>
 #include <stdexcept>
