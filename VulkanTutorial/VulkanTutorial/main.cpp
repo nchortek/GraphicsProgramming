@@ -6,6 +6,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <vector>
+#include <set>
 
 // TODO:
 // After following this tutorial, you could implement automatic resource management by writing C++
@@ -43,6 +45,36 @@ private:
 		createInstance();
 	}
 
+	// TODO: Would be good for this to provide some information about the missing extensions
+	bool checkRequiredExtensions(const char** requiredExtensions, uint32_t numRequiredExtensions) {
+		uint32_t numExtensions = 0;
+
+		// Grab just the number of available extensions first so we can allocate an appropriately
+		// sized vector to hold them.
+		vkEnumerateInstanceExtensionProperties(nullptr, &numExtensions, nullptr);
+
+		std::vector<VkExtensionProperties> availableExtensions(numExtensions);
+		vkEnumerateInstanceExtensionProperties(nullptr, &numExtensions, availableExtensions.data());
+
+		std::set<std::string> extensionNames = {};
+
+		for (const auto& availableExtension : availableExtensions) {
+			std::string strExtension(availableExtension.extensionName);
+			extensionNames.insert(strExtension);
+		}
+
+		for (uint32_t i = 0; i < numRequiredExtensions; i++) {
+			const char* requiredExtension = requiredExtensions[i];
+			std::string strReqExtension(requiredExtension);
+
+			if (!extensionNames.contains(strReqExtension)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	void createInstance() {
 		// Note that delcaring this struct with empty braces causes it to be initialized via
 		// "value initialization".
@@ -68,6 +100,10 @@ private:
 		const char** glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
+		if (!checkRequiredExtensions(glfwExtensions, glfwExtensionCount)) {
+			throw std::runtime_error("Missing one or more Vulkan extensions required by GLFW.");
+		}
+
 		createInfo.enabledExtensionCount = glfwExtensionCount;
 
 		// TODO: ppEnabledExtensionNames is defined as type "const char* const*" -- What exactly does that mean? Both the double pointer and the double const.
@@ -88,7 +124,10 @@ private:
 		}
 	}
 
+	// Note that we are careful to free resources in the reverse order that
+	// they were allocated in our run() function
 	void cleanup() {
+		vkDestroyInstance(instance, nullptr);
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}
