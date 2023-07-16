@@ -1,0 +1,6 @@
+﻿  main.cpp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 275 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  VulkanTutorial.vcxproj -> C:\GraphicsProgramming\VulkanTutorial\x64\Release\VulkanTutorial.exe

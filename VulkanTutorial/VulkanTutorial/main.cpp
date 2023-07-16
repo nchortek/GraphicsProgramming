@@ -21,6 +21,16 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+const std::vector<const char*> validationLayers = {
+	"VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG
+	const bool enableValidationLayers = false;
+#else
+	const bool enableValidationLayers = true;
+#endif
+
 class HelloTriangleApplication {
 public:
 	void run() {
@@ -56,6 +66,8 @@ private:
 		std::vector<VkExtensionProperties> availableExtensions(numExtensions);
 		vkEnumerateInstanceExtensionProperties(nullptr, &numExtensions, availableExtensions.data());
 
+		// Build a set of the available extensions so we avoid a nested loop when iterating through
+		// our required extensions to check that they are available
 		std::set<std::string> extensionNames = {};
 
 		for (const auto& availableExtension : availableExtensions) {
@@ -75,7 +87,40 @@ private:
 		return true;
 	}
 
+	bool checkValidationLayerSupport() {
+		uint32_t numLayers;
+
+		// Grab just the number of available layers first
+		vkEnumerateInstanceLayerProperties(&numLayers, nullptr);
+
+		std::vector<VkLayerProperties> availableLayers(numLayers);
+		vkEnumerateInstanceLayerProperties(&numLayers, availableLayers.data());
+
+		// Build a set of the available validation layers so we avoid a nested loop when iterating
+		// through our requested layers to check that they are available
+		std::set<std::string> layerNames = {};
+
+		for (const auto& availableLayer : availableLayers) {
+			std::string strLayer(availableLayer.layerName);
+			layerNames.insert(strLayer);
+		}
+
+		for (const char* requestedLayer : validationLayers) {
+			std::string strRequestedLayer(requestedLayer);
+
+			if (!layerNames.contains(strRequestedLayer)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	void createInstance() {
+		if (enableValidationLayers && !checkValidationLayerSupport()) {
+			throw std::runtime_error("Missing one or more requested validation layers.");
+		}
+
 		// Note that delcaring this struct with empty braces causes it to be initialized via
 		// "value initialization".
 		VkApplicationInfo appInfo{};
@@ -108,7 +153,14 @@ private:
 
 		// TODO: ppEnabledExtensionNames is defined as type "const char* const*" -- What exactly does that mean? Both the double pointer and the double const.
 		createInfo.ppEnabledExtensionNames = glfwExtensions;
-		createInfo.enabledLayerCount = 0;
+		
+		if (enableValidationLayers) {
+			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+			createInfo.ppEnabledLayerNames = validationLayers.data();
+		}
+		else {
+			createInfo.enabledLayerCount = 0;
+		}
 
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create VkInstance!");
@@ -125,7 +177,7 @@ private:
 	}
 
 	// Note that we are careful to free resources in the reverse order that
-	// they were allocated in our run() function
+	// they were allocated
 	void cleanup() {
 		vkDestroyInstance(instance, nullptr);
 		glfwDestroyWindow(window);
