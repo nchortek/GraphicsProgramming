@@ -263,14 +263,20 @@ private:
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
 		createInfo.ppEnabledExtensionNames = glfwExtensions.data();
 		
+		// The debugCreateInfo variable is placed outside the if statement to ensure that it is not destroyed before the vkCreateInstance call
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 		if (enableValidationLayers)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
+
+			populateMessengerCreateInfo(debugCreateInfo);
+			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
 		else
 		{
 			createInfo.enabledLayerCount = 0;
+			createInfo.pNext = nullptr;
 		}
 
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
