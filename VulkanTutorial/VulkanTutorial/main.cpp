@@ -43,6 +43,7 @@ public:
 private:
 	GLFWwindow* window;
 	VkInstance instance;
+	VkDebugUtilsMessengerEXT debugMessenger;
 
 	void initWindow() {
 		glfwInit();
@@ -53,10 +54,13 @@ private:
 
 	void initVulkan() {
 		createInstance();
+		setupDebugMessenger();
 	}
 
+#pragma region Extensions
+
 	// TODO: Would be good for this to provide some information about the missing extensions
-	bool checkRequiredExtensions(const char** requiredExtensions, uint32_t numRequiredExtensions) {
+	bool checkRequiredExtensions(const std::vector<const char*> requiredExtensions) {
 		uint32_t numExtensions = 0;
 
 		// Grab just the number of available extensions first so we can allocate an appropriately
@@ -75,8 +79,7 @@ private:
 			extensionNames.insert(strExtension);
 		}
 
-		for (uint32_t i = 0; i < numRequiredExtensions; i++) {
-			const char* requiredExtension = requiredExtensions[i];
+		for (const auto& requiredExtension : requiredExtensions) {
 			std::string strReqExtension(requiredExtension);
 
 			if (!extensionNames.contains(strReqExtension)) {
@@ -86,6 +89,33 @@ private:
 
 		return true;
 	}
+
+	std::vector<const char*> getRequiredExtensions() {
+		uint32_t glfwExtensionCount = 0;
+		const char** glfwExtensions;
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		// Pointer arithmetic in both C and C++ is a logical addition, not a numeric addition. 
+		// Adding x to a pointer means "produce a pointer to the object that comes in memory x places after this one," 
+		// which means that the compiler automatically scales up whatever you're incrementing the pointer with by the 
+		// size of the object being pointed at.
+		std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+		if (enableValidationLayers) {
+			requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		}
+
+		if (!checkRequiredExtensions(requiredExtensions)) {
+			throw std::runtime_error("Missing one or more required Vulkan extensions.");
+		}
+
+		return requiredExtensions;
+	}
+
+#pragma endregion
+
+
+#pragma region Validation
 
 	bool checkValidationLayerSupport() {
 		uint32_t numLayers;
@@ -116,6 +146,29 @@ private:
 		return true;
 	}
 
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData) {
+
+		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		}
+
+		return VK_FALSE;
+	}
+
+	void setupDebugMessenger() {
+		if (!enableValidationLayers) {
+			return;
+		}
+
+
+	}
+
+#pragma endregion
+
 	void createInstance() {
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
 			throw std::runtime_error("Missing one or more requested validation layers.");
@@ -135,24 +188,14 @@ private:
 		appInfo.engineVersion = VK_API_VERSION_1_0;
 		appInfo.apiVersion = VK_API_VERSION_1_0;
 
-		// TODO: Do a refresher on pointers and references
-
 		VkInstanceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
 
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		std::vector<const char*> glfwExtensions = getRequiredExtensions();
 
-		if (!checkRequiredExtensions(glfwExtensions, glfwExtensionCount)) {
-			throw std::runtime_error("Missing one or more Vulkan extensions required by GLFW.");
-		}
-
-		createInfo.enabledExtensionCount = glfwExtensionCount;
-
-		// TODO: ppEnabledExtensionNames is defined as type "const char* const*" -- What exactly does that mean? Both the double pointer and the double const.
-		createInfo.ppEnabledExtensionNames = glfwExtensions;
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
+		createInfo.ppEnabledExtensionNames = glfwExtensions.data();
 		
 		if (enableValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
