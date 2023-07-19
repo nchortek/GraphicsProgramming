@@ -3,11 +3,12 @@
 // TODO: Investigate if I need to be using the MINGW64 Binaries since that's what my git bash is.
 // (I don't think so since I use visual studio for editing and compiling, and MINGW64 is just my bash shell)
 
-#include <iostream>
-#include <stdexcept>
 #include <cstdlib>
-#include <vector>
+#include <iostream>
+#include <optional>
 #include <set>
+#include <stdexcept>
+#include <vector>
 
 // TODO:
 // After following this tutorial, you could implement automatic resource management by writing C++
@@ -31,6 +32,8 @@ const std::vector<const char*> validationLayers =
 #else
 	const bool enableValidationLayers = true;
 #endif
+
+#pragma region Debug Proxy Functions
 
 VkResult CreateDebugUtilsMessengerEXT(
 	VkInstance instance,
@@ -61,6 +64,8 @@ void DestroyDebugUtilsMessengerEXT(
 	}
 }
 
+#pragma endregion
+
 class HelloTriangleApplication
 {
 public:
@@ -77,6 +82,10 @@ private:
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
+	// Note that the VkPhysicalDevice object is implicitly destroyed when the VkInstance is destroyed,
+	// which is we why don't need to specifically handle it during cleanup.
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
 	void initWindow()
 	{
 		glfwInit();
@@ -89,7 +98,98 @@ private:
 	{
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
 	}
+
+#pragma region Physical Devices
+
+	void pickPhysicalDevice()
+	{
+		uint32_t deviceCount = 0;
+		// Grab just the device count first
+		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+		
+		if (deviceCount == 0)
+		{
+			throw std::runtime_error("Failed to find a GPU that supports Vulkan.");
+		}
+
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+		for (const auto& device : devices)
+		{
+			if (isGraphicsDeviceSuitable(device))
+			{
+				physicalDevice = device;
+				break;
+			}
+		}
+
+		if (physicalDevice == VK_NULL_HANDLE)
+		{
+			throw std::runtime_error("Failed to find a GPU suitable for this application.");
+		}
+	}
+
+	bool isGraphicsDeviceSuitable(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices = findQueueFamilies(device);
+		return indices.isComplete();
+	}
+
+#pragma endregion
+
+#pragma region Queues
+
+	struct QueueFamilyIndices
+	{
+		// Any value of uint32_t could potentially be a valid queue family index (including 0),
+		// so we wrap it into std::optional in order to tell if a queue family was actually found.
+		std::optional<uint32_t> graphicsFamily;
+
+		bool isComplete()
+		{
+			return graphicsFamily.has_value();
+		}
+	};
+
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+
+		// Grab the count first
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		int i = 0;
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				indices.graphicsFamily = i;
+			}
+
+			// TODO: Why not just break as soon as we find the first queue family?
+			// Thought: Maybe because we may want "isComplete" to check for the presence
+			// of multiple different queue families with distinct features, so we might not want
+			// to break after finding just one queue family that satisfies one (but not necessarily all)
+			// of our requirements
+			if (indices.isComplete())
+			{
+				break;
+			}
+
+			i++;
+		}
+
+		return indices;
+	}
+
+#pragma endregion
 
 #pragma region Extensions
 
