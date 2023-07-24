@@ -3,8 +3,10 @@
 // TODO: Investigate if I need to be using the MINGW64 Binaries since that's what my git bash is.
 // (I don't think so since I use visual studio for editing and compiling, and MINGW64 is just my bash shell)
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -19,6 +21,7 @@
 //
 // Potentially accomplish this via RAII object/class management
 
+// NOTE: The following dimensions are in screen coordinates, **not** pixels.
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -100,6 +103,7 @@ private:
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		// NOTE: The dimensions of the window are specified in screen coordinates here.
 		window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 	}
 
@@ -149,12 +153,62 @@ private:
 
 		return details;
 	}
+	
 
+	// Quote from the tutorial:
+	// 
+	// --------------------------------------------------------------------------------------------------------------------
+	// The swap extent is the resolution of the swap chain images and it's almost always exactly equal to the resolution
+	// of the window that we're drawing to in pixels (more on that in a moment). The range of the possible resolutions is
+	// defined in the VkSurfaceCapabilitiesKHR structure. Vulkan tells us to match the resolution of the window by setting
+	// the width and height in the currentExtent member. However, some window managers do allow us to differ here and this
+	// is indicated by setting the width and height in currentExtent to a special value: the maximum value of uint32_t.
+	// In that case we'll pick the resolution that best matches the window within the minImageExtent and maxImageExtent
+	// bounds. But we must specify the resolution in the correct unit.
+	// 
+	// GLFW uses two units when measuring sizes : pixels and screen coordinates.For example, the resolution{ WIDTH, HEIGHT }
+	// that we specified earlier when creating the window is measured in screen coordinates.But Vulkan works with pixels, 
+	// so the swap chain extent must be specified in pixels as well.Unfortunately, if you are using a high DPI display
+	// (like Apple's Retina display), screen coordinates don't correspond to pixels.Instead, due to the higher pixel density,
+	// the resolution of the window in pixel will be larger than the resolution in screen coordinates.So if Vulkan doesn't
+	// fix the swap extent for us, we can't just use the original {WIDTH, HEIGHT}. Instead, we must use glfwGetFramebufferSize
+	// to query the resolution of the window in pixel before matching it against the minimum and maximum image extent
+	// --------------------------------------------------------------------------------------------------------------------
+	// 
+	// TODO Things I don't currently understand:
+	//
+	// 1. What does the maximimum value of uint32_t indicate within currentExtent? The spec says it indicates "that the surface
+	//    size will be determined by the extent of a swapchain targeting the surface", but what precisely does that mean? 
+	//    When and why do we fall into that case vs the non-max case?
+	//
+	// 2. What exactly is happening with the clamping? glfwGetFramebufferSize gives dimensions in pixels, which is what
+	//    Vulkan needs. Then we clamp that value to the surface's minimum and maximum image extent values. But why would the
+	//    window have dimensions outside the valid range of the surface? Is it because the window size is programmatically
+	//    defined rather than being tied to hardware? So we want to make sure the window we specified for GLFW in screen
+	//    coordinates does not result in a pixel dimension outside the range our surface supports?
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
-		// TODO: FINISH THIS
-		VkExtent2D extent;
-		return extent;
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		{
+			return capabilities.currentExtent;
+		}
+		else
+		{
+			// Width and height here are in pixels, **not** screen coordinates
+			int width, height;
+			glfwGetFramebufferSize(window, &width, &height);
+
+			VkExtent2D actualExtent =
+			{
+				static_cast<uint32_t>(width),
+				static_cast<uint32_t>(height)
+			};
+
+			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+			return actualExtent;
+		}
 	}
 
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
