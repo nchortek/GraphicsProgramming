@@ -97,6 +97,12 @@ private:
 	// Device queues are implicitly cleaned up when the device is destroyed, so we don't need to do anything in cleanup
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkSwapchainKHR swapChain;
+	// These images get created by the implementation for the swap chain and they will be automatically cleaned up once
+	// the swap chain has been destroyed, therefore we don't need to add any cleanup code.
+	std::vector<VkImage> swapChainImages;
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
 
 	void initWindow()
 	{
@@ -116,9 +122,93 @@ private:
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createSwapChain();
 	}
 
 #pragma region Swap Chains and Surfaces
+
+	void createSwapChain()
+	{
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+		VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+		// Request at least one more image than the minimum to avoid having to wait on the driver to complete internal
+		// operations before we can acquire another image to render to.
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+
+		// if capabilities.maxImageCount is 0 it means there is no max. If a max exists, make sure we don't exceed it.
+		if (swapChainSupport.capabilities.maxImageCount > 0
+			&& imageCount > swapChainSupport.capabilities.maxImageCount)
+		{
+			// TODO: Why wouldn't we always want to take the maxImageCount if a max exists? 
+			// Are there ideal image counts for rendering? Is higher not necessarily always better?
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSwapchainCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = surface;
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+		if (indices.graphicsFamily != indices.presentFamily)
+		{
+			// We prefer EXCLUSIVE mode for performance reasons, but we need both graphics and present support,
+			// so if we don't have a queue family that supports both we have to go with CONCURRENT since it supports
+			// multiple distinct queue families.
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else
+		{
+			// An image is owned by one queue family at a time and ownership must be explicitly transferred before
+			// using it in another queue family. This option offers the best performance.
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		// We can specify that a certain transform should be applied to images in the swap chain if it is supported
+		// (supportedTransforms in capabilities), like a 90 degree clockwise rotation or horizontal flip. To specify
+		// that we do not want any transformation, we specify the current transformation.
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+
+		// The compositeAlpha field specifies if the alpha channel should be used for blending with other windows in
+		// the window system. We almost always want to simply ignore the alpha channel, hence VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR.
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+
+		// clipped specifies whether the Vulkan implementation is allowed to discard rendering operations that affect
+		// regions of the surface that are not visible. (e.g. another window obscuring the window we're drawing to)
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create swapchain.");
+		}
+
+		// Retrieve the image objects that the swapChain implementation created.
+		// Note that we need to re-fetch the imageCount since we only specified a minimum.
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+		swapChainImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+
+		// Store our surfaceFormat and extent selections for future reference as well.
+		swapChainImageFormat = surfaceFormat.format;
+		swapChainExtent = extent;
+	}
 
 	struct SwapChainSupportDetails
 	{
@@ -369,7 +459,7 @@ private:
 		if (extensionsSupported)
 		{
 			SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-			swapChainAdequate = !swapChainSupport.formats.empty() && swapChainSupport.presentModes.empty();
+			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 		}
 
 		return indices.isComplete() && extensionsSupported && swapChainAdequate;
@@ -650,6 +740,7 @@ private:
 	// they were allocated
 	void cleanup()
 	{
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyDevice(device, nullptr);
 
 		if (enableValidationLayers)
