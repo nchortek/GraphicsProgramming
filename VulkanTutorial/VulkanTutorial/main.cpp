@@ -10,6 +10,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // TODO:
@@ -103,6 +104,7 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+	std::vector<VkImageView> swapChainImageViews;
 
 	void initWindow()
 	{
@@ -123,9 +125,49 @@ private:
 		pickPhysicalDevice();
 		createLogicalDevice();
 		createSwapChain();
+		createImageViews();
 	}
 
 #pragma region Swap Chains and Surfaces
+
+	void createImageViews()
+	{
+		// TODO: Note that this function will have unexpected behavior if swapChainImages hasn't been populated yet.
+		// Maybe it would be wise to define some bools/properties for the application that mark
+		// when a vulkan object has been created and is ready for use. Then we can add error checks
+		// to the beginning of methods like this one that depend on a preceding step having created
+		// certain objects.
+		//
+		// Perhaps a better idea would be to create wrapper classes around each vulkan object / groups of vulkan objects.
+		// then they could contain those status properties and we could clean up this main file / decouple logic.
+		swapChainImageViews.resize(swapChainImages.size());
+
+		for (size_t i = 0; i < swapChainImages.size(); i++)
+		{
+			VkImageViewCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = swapChainImages[i];
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			createInfo.format = swapChainImageFormat;
+
+			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 1;
+
+			if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
+			{
+				// TODO: Not sure if it's safe to pass size_t to to_string
+				throw std::runtime_error("Failed to create image view " + std::to_string(i));
+			}
+		}
+	}
 
 	void createSwapChain()
 	{
@@ -740,6 +782,11 @@ private:
 	// they were allocated
 	void cleanup()
 	{
+		for (auto imageView : swapChainImageViews)
+		{
+			vkDestroyImageView(device, imageView, nullptr);
+		}
+
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyDevice(device, nullptr);
 
