@@ -1,4 +1,4 @@
-# This is a place to hold my work on tutorials on my way to becoming a graphics/rendering software engineer. My ongoing career goal is to use computer graphics programming techniques to empower artists to create immersive and physically accurate virtual experiences. 
+# Hi, I'm Nathan Chortek, and this is a place to hold my work on tutorials on my way to becoming a graphics/rendering software engineer. My ongoing career goal is to use computer graphics programming techniques to empower artists to create immersive and physically accurate virtual experiences. 
 
 Thus far I have completed the https://learnopengl.com/Introduction tutorial, up through the Model Loading chapter. This amounts to the implementation of a basic renderer using C++, OpenGL and GLSL with support for the following features:
 - Phong lighting model
