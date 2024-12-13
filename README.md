@@ -11,3 +11,5 @@ Thus far I have completed the https://learnopengl.com/Introduction tutorial, up 
 
 The main code for the rendering loop can be found here:
 https://github.com/nchortek/GraphicsProgramming/blob/main/LearnOpenGL/LearnOpenGL/LearnOpenGL/main.cpp
+
+Before beginning graduate school, I hope to complete the https://vulkan-tutorial.com/ tutorial as well, which is currently in-progress.
